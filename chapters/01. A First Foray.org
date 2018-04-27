@@ -1,11 +1,4 @@
 * A First Foray into Clojure's Syntax
-** Outline
-  - Functions and how to call them
-  - How to define functions
-  - Collections and how to process them
-  - JavaScript and how to use it.
-
-** Overview. 
 
 In this step, we will start writing some ClojureScript. To learn ClojureScript, we need to get a feel for its syntax. You won't learn everything there is to know about Clojure's syntax, but you will know enough to use it as your desktop calculator.
 
@@ -97,15 +90,15 @@ cljs.user=> (+ 1 1)
 2
 #+END_SRC
 
-Whereas most mainstream languages call functions with the the function outside the parentheses (=myFn(arg)=), lisps like Clojure start with an opening parenthesis and are followed first by the function name, then the arguments: =(myFn arg)=. This syntactical choice, called *prefix notation*, gives ClojureScript remarkable power. Let's contrast and compare:
+Whereas most mainstream languages call functions with the the function outside the parentheses (=myFn(arg)=), lisps like Clojure start with an opening parenthesis and are followed first by the function name, then the arguments: =(myFn arg)=. This syntactical choice gives ClojureScript remarkable power. Let's contrast and compare:
 
-| Prefix Notation | Infix Notation |
-|-----------------+----------------|
-| myFn(1)         | (myFn 1)       |
-| myFn(1, 2)      | (myFn 1 2)     |
-| sideEffect()    | (sideEffect)   |
+| JavaScript   | ClojureScript |
+|--------------+---------------|
+| myFn(1)      | (myFn 1)      |
+| myFn(1, 2)   | (myFn 1 2)    |
+| sideEffect() | (sideEffect)  |
 
-Understanding the power of prefix notation will come later. Our immediate goal is getting a feel for ClojureScript's syntax. Fortunately for us, ClojureScript's use of prefix notation means that its syntax is easy to pick up, because there are not many special rules. Infix operators, such as JavaScript's =+=, =-=, =*=, =/= (and so on) follow different rules than JavaScript's build in functions, such as =isNaN= or =parseInt=. But with Clojure, + is just a function, and it is called like any other function. 
+Understanding the power of Clojure's syntax for function calls will come later. Our immediate goal is just getting a feel for ClojureScript. Fortunately for us, ClojureScript's syntax is easy to pick up, because there are not many special rules. Infix operators, such as JavaScript's =+=, =-=, =*=, =/= (and so on) follow different rules than JavaScript's build in functions, such as =isNaN= or =parseInt=. But with Clojure, =+= is just a function, and it is called like any other function. 
 
 We will learn more about functions in a bit. First, let's take a look at Clojure's basic data types.
 
@@ -584,14 +577,29 @@ Excellent! We will learn a lot more about functions -- and about functional prog
 
 How do I see the javascript emitted? Turn verbose mode on with -v.
 
+**** Answers to Our Questions
+
+Now we can review the questions we posed at the beginning of the chapter, and summarize the answers.
+
+  - *How can I execute some ClojureScript code?* The [[https://github.com/anmonteiro/lumo][Lumo REPL]] makes it easy
+  - *What are the basic data types available in ClojureScript?* In this chapter, we met strings, keywords, variables, and numbers.
+  - *What are some of ClojureScript's collections?* In this chapter we explored the vector and the map. We caught a glimpse of lazy sequences, but we did not need to understand them immediately, and so we deferred that discussion to later.
+  - *How do I define a function? How do I execute it?* We saw that executing functions is done by putting a function and its arguments inside parentheses. We also saw that ClojureScript does not use infix operators. 
+  - *What are some built in functions ClojureScript gives me? How do I find the others?* We saw that the [[http://cljs.info][ClojureScript Cheat Sheet]] is a convenient way to find Clojure functions. We also saw that we can use =find-doc= at the command line.
+  - *How can I get help in the REPL?* We made use of the =doc= function to learn more about a given function.
+  - Where is ClojureScript's documentation?
+  - *Where do I go for help?* Hopefully, you managed not to get stuck in the course of the tutorial. If you have problems with the tutorial, feel free to post an issue on the repository. For general Clojure/ClojureScript help, check out [[http://clojureverse.org][the ClojureVerse forums]].
+
 **** Further reading
-     - ClojureScript Unraveled.
-     - CLJS Cheat Sheet
-     - Clojure Style Guide
-     - Slager's "Why ClojureScript"
+     - [[https://funcool.github.io/clojurescript-unraveled/][ClojureScript Unraveled]]. /ClojureScript Unraveled/ dives deeper into ClojureScript as a language. You may find its [[https://funcool.github.io/clojurescript-unraveled/#language-the-basics][chapter on the basics of the language]] helpful for further context to the work we have done here.
+     - [[http://cljs.info][CLJS Cheat Sheet]]. Very helpful for when you just need a quick look instead of a deep dive.
+     - [[https://clojurescript.org/][ClojureScript's official site]]. ClojureScript's documentation and their guides are getting better all the time.  
+     - [[https://github.com/bbatsov/clojure-style-guide][Clojure Style Guide]]. This is an unofficial touchstone for Clojure/ClojureScript's best practices.
+     - [[https://www.youtube.com/watch?v=BThkk5zv0DE][Derik Slager's talk "Why ClojureScript"]]. An inspiring talk that helps lay out the reasons for using ClojureScript.
 
 **** Homework
-     - You were able to find high priority tasks. Find the low priority tasks.
+     - You were able to find high priority tasks. Use =filter= to find the low priority tasks.
      - Try to get the second item from a vector.
-     - Explore the CLJS info sheet. Try out some functions in the Strings and Numbers categories
+     - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
+     - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
 
