@@ -4,6 +4,17 @@ This is a tutorial on ClojureScript for JavaScript developers. Much of the exist
 
 Through this tutorial, you will learn about ClojureScript's syntax and idioms. But the larger purpose is to develop a mental map of the ClojureScript landscape: the tooling, the critical libraries, where to go for help from the community, how to solve problems idiomatically. Our purpose is not to be exhaustive. There are more complete sources to read about Clojure's syntax or the various Clojure web stacks. Our purpose is to stitch the pieces together into a whole, indicating where you can go deeper along the way.
 
+** Table of Contents
+
+1. A First Foray into ClojureScript. An introduction to ClojureScript's syntax, with plenty of exercise at the REPL.
+2. Hello World in the Browser. The basics of compiling ClojureScript, running it in the browser, and using it to manipulate the DOM. (IN PROCESS)
+3. Hello World in Node. The basics of compiling ClojureScript and using it with Node. We begin with an example of a command line tool, and proceed to create a simple server. (TODO)
+4. Functional Programming. After seeing how ClojureScript might be used on the client and the server, we take a step back and consider the principles of functional programming. We cover referential transparency, immutable data structures, and function pipelines.
+5. Upgrading our toolchain. In this chapter, we set up and explore Leiningen and Figwheel. We begin to understand why ClojureScript's tooling is state of the art.
+6. DOM Manipulation in ClojureScript. In the course of manipulating the DOM in ClojureScript, we learn more about JavaScript interop. Having discussed functional programming, we see how DOM manipulation falls short.
+7. Reagent. We learn the better way to create UIs in ClojureScript, using Reagent, a React.js wrapper.
+8. ClojureScript on the Server.
+
 ** Why ClojureScript?
 
 Why should JavaScript developers be interested in ClojureScript? With ES6/7 and a toolchain including Webpack or TypeScript, JavaScript has become quite a nice language to program in. In many ways, the JavaScript world is implementing many of the ideas that had currency in the ClojureScript world for years. Libraries like Immutable.js provide immutable data structures, the React/Redux stack starkly demonstrate the benefits of functional programming to manage state, async/await provides a great experience for concurrent programming.
