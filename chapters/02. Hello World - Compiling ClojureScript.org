@@ -1,0 +1,340 @@
+* Hello World in the Browser
+
+In the last chapter, we did all our work at the REPL. In this chapter, we will learn how ClojureScript can be used on a web page. For this, we need to compile ClojureScript into a JavaScript file that can be included in an HTML file.
+
+In later chapters we will learn how to set up a tool chain that enables an unparalleled development experience. However, we are going to postpone the tools for the moment. This chapter focuses on the simplest on most straightforward way to get ClojureScript running in a browser. That means stripping down the moving pieces to the absolute basics. Once we have understood the basics, we can incrementally add the bells and whistles.
+
+** Questions We Will Answer
+
+   - How do I compile ClojureScript to JavaScript for the browser?
+   - How do I add ClojureScript to my page?
+   - How do I interact with the DOM?
+   - How do I call JavaScript methods, such as =document.querySelector=?
+   - How do I get properties on JavaScript objects from ClojureScript? How do I set them?
+
+** What We Will Do
+
+We will start very simply, with a minimal "Hello World" example. Our first step will simply be appending "Hello World" text to our document. Then we will begin attaching events. Every time our "Hello World" text is clicked on, we will add an exclamation mark to the the end.
+
+Once we know that our setup is working, we will build a minimal workout tracker. Nothing will be stored server-side. We want to be able to log an exercise, with sets and repetitions, and have it displayed to us in a list.
+
+All code for this exercise will be in =examples/hello_world=.
+
+** Practicum
+
+First, create a directory entitled =hello_world=.
+
+#+BEGIN_SRC bash
+mkdir hello_world
+cd hello_world
+#+END_SRC
+
+We need an index.html file.
+
+#+BEGIN_SRC bash
+touch index.html
+#+END_SRC
+
+Add this minimal html into your =index.html=:
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ClojureScript Tutorial | Hello World!</title>
+    </head>
+    <body>
+    </body>
+</html>
+#+END_SRC
+
+Now we need to figure out how to compile our ClojureScript.
+
+*** Compiling ClojureScript with Lumo
+
+In a later chapter, we will use the gold standard in compiling ClojureScript. For now, we already have the Lumo REPL installed. It turns out that Lumo will work just fine for our simple use case.
+
+First, we need a ClojureScript source file.
+
+#+BEGIN_SRC bash
+touch hello_world.cljs
+#+END_SRC
+
+Now we need to open up hello_world.cljs in an editor. If your editor does not support ClojureScript, there are several good options for you. The easiest is probably Atom with the =language-clojure= package. See [[https://medium.com/@roman01la/from-javascript-to-clojurescript-which-editor-to-choose-a444b2f8edca][this blog post]] by Roman Liutikov for suggestions on setting Atom up for ClojureScript.
+
+Open =hello_world.cljs= in your editor. Add the following:
+
+#+BEGIN_SRC clojure
+(ns hello-world)
+(.write js/document "Hello World!")
+#+END_SRC
+
+Save and close. =ns= lets use declare namespaces for our code. When we get into using multiple files, we will explain namespaces in more detail.
+
+The second looks a little different than the function calls we were starting to get used to from the last chapter. This is an example of *JavaScript interop*. We can call a method on a JavaScript object by writing the method preceded by a dot, the JavaScript object, and then the arguments we want to pass in.
+
+#+BEGIN_SRC 
+(.<method-name> <js object> <argument 1> <argument 2> ...)
+#+END_SRC
+
+So these are equivalent:
+
+| ClojureScript                   | JavaScript                     |
+|---------------------------------+--------------------------------|
+| =(.myMethod myObj "one" "two")= | =myObj.myMethod("one", "two")= |
+| =(myMethod myObj)=              | =myObj.myMethod()=             |
+
+Something else is =js/document=. What this means is that there is a namespace, =js=, in which we can access the =document= object.
+
+We will elaborate more on namespaces and JavaScript interop. Let's see if we can compile and run our ClojureScript code first.
+
+In order to compile our =hello_world.cljs= file, we'll start by using the REPL. Close your REPL if it is still running, =cd= into =examples/hello_world= directory, and run =lumo=.
+
+From within the REPL, we need to =require= Lumo's build api. True to our ClojureScript experience so far, we find that we are using a function in a namespace:
+
+#+BEGIN_SRC 
+cljs.user=> (require '[lumo.build.api :as b])
+nil
+#+END_SRC
+
+=require= makes build api available to us as =b=. It would take us too far afield to explain the ='\=. Just think of this as a special form very loosely analogous to =import b from 'lumo/build/api'\=. We are importing the =lumo.build.api= namespace, and making it accessible on the variable =b=.
+
+The function we are looking for is =lumo.build.api/build=. Since we use the =:as b=, we can refer to it as =b/build=. Let's check its docstring.
+
+#+BEGIN_SRC 
+cljs.user=> (doc b/build)
+-------------------------
+lumo.build.api/build
+([source opts] [source opts compiler-env])
+  Given a source which can be compiled, produce runnable JavaScript.
+nil
+#+END_SRC
+
+Looks like exactly what we need. However, it doesn't really explain what the =opts= argument is. Our goal is not to get too deep into compiler options at the moment.[fn:1]  We can surmise from a [[https://anmonteiro.com/2017/02/compiling-clojurescript-projects-without-the-jvm/][blog post]] by Lumo's creator that we could use something like this:
+
+#+BEGIN_SRC 
+;; opts
+{:main 'hello-world
+   :output-to "hello_world.js"
+   :optimizations :none
+   :target :browser}
+#+END_SRC
+
+Let's try it at the REPL. Build takes a directory and an options map. Our directory is the current directory, which we indicate with ="."=. Try calling this:
+
+#+BEGIN_SRC 
+cljs.user=> (b/build "."
+       #_=>          {:main 'hello-world
+       #_=>           :output-to "hello_world.js"})
+nil
+#+END_SRC
+
+If this didn't work for you, remember that you need to =require= Lumo's build api at the REPL. Also, you will get an error complaining about a single segment namespace. You can safely ignore it. 
+
+=b/build= returned =nil=, but that doesn't mean nothing happens. Often functions called for their side effects return =nil=. Let's check the =examples/hello_world= directory to see what changed:
+
+#+BEGIN_SRC bash
+$ ls
+hello_world.cljs  hello_world.js  index.html  out
+$ ls out
+cljs  cljs_deps.js  goog  process
+#+END_SRC
+
+Looks like it worked! We have a =hello_world.js= file. But we also have an =out= directory with a bunch of stuff in it. What's that all about? Let's checkout out =hello_world.js= first to see what is in there:
+
+#+BEGIN_SRC JavaScript
+var CLOSURE_UNCOMPILED_DEFINES = {};
+if(typeof goog == "undefined") document.write('<script src="out/goog/base.js"></script>');
+document.write('<script src="out/cljs_deps.js"></script>');
+document.write('<script>if (typeof goog == "undefined") console.warn("ClojureScript could not load :main, did you forget to specify :asset-path?");</script>');
+document.write('<script>goog.require("process.env");</script>');
+document.write('<script>goog.require("hello_world");</script>');
+#+END_SRC
+
+We see that Lumo has created a number of dependencies, and is including them with script tags. We haven't added a script tag to =hello_world.js= yet. Let's do that, and see if we were successful.
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ClojureScript Tutorial | Hello World!</title>
+    </head>
+    <body>
+        <!-- This is new -->
+        <script src="hello_world.js"></script>
+    </body>
+</html>
+#+END_SRC
+
+Now open up =hello_world/index.html= in your browser. You should see the text "Hello World!"
+
+Let's take stock of what we have done. We were able to write ClojureScript in a =.cljs= file, compile it with Lumo, and it executed in our browser. We are able to verify that this works, because we see "Hello World" in the browser.
+
+*** Event Handling
+
+Simply adding some text to the body of a document verifies our setup, but it doesn't reflect what JavaScript is typically used for. HTML is perfectly sufficient to display text. What JavaScript adds is interaction.
+
+Let's do some very basic event handling. Suppose we want to add an exclamation mark to hello world every time the user clicks on it. Let's start by moving "Hello World" into our html. Change =hello_world/index.html= as follows:
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ClojureScript Tutorial | Hello World!</title>
+    </head>
+    <body>
+        <h1 id="exclaim">Hello World!</h1> <!-- This is new -->
+        <script src="hello_world.js"> </script>
+    </body>
+</html>
+#+END_SRC
+
+We enclosed "Hello World!" in an =h1= tag with the class =exclaim=. In JavaScript we could set an event listener on any element with an =exclaim= class with a combination of the =document.querySelector= and =Node.addEventListener= methods. This would do the trick:
+
+#+BEGIN_SRC JavaScript
+const exclaimer = document.querySelector('#exclaim');
+function addExclaimationMark(evt) {
+  const text = evt.target.textContent;
+  const newText = text + '!';
+  evt.target.textContent = newText
+}
+exclaimer.addEventListener('click', addExclaimationMark);
+#+END_SRC
+
+We need to translate this to ClojureScript. We can select the our =h1= element by its id:
+
+#+BEGIN_SRC ClojureScript
+(def exclaimer (.querySelector js/document "#exclaim"))
+#+END_SRC
+
+We need to write a function that takes the =event= object caused by the click event. (If you are unfamiliar with =events=, MDN has a nice [[https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Building_blocks/Events][overview]].) The element that originated the event is stored on =event.target=. And the "Hello World" text is accessible on the =textContent= property of the element, which means we can get to it with =event.target.textContent=.
+
+But ClojureScript requires we turn things inside out a bit. Recall that to call a method on an object, we use the following form:
+
+#+BEGIN_SRC 
+(.myMethod myObj "myArgument")
+#+END_SRC
+
+However, =target= is not a method of the event object, it is a property. Likewise, =textContent= is not a method of the =h1= node, it is a property. ClojureScript treats property access differently from method calls. Instead of =.=, we use =.-= to access a property. Here is a comparison:
+
+| Language      | Property Access        | Method Call         |
+|---------------+------------------------+---------------------|
+| ClojureScript | =(.-myProperty myObj)= | =(.myMethod myObj)= |
+| JavaScript    | =myObj.myProperty=     | =myObj.myMethod()=  |
+
+There's another important difference. ClojureScript requires that you use =set!= to change a property on an object. Contrast with JavaScript:
+
+| ClojureScript                        | JavaScript                 |
+|--------------------------------------+----------------------------|
+| =(set! (.-myProp myObj) "newValue")= | =myObj.myProp = "newValue= |
+
+We see again that philosophical difference between ClojureScript and JavaScript: where JavaScript uses an infix operator, ClojureScript uses the same form as a function call.[fn:2]
+
+As we think about how to port our =addExclamationMark= JavaScript function to ClojureScript, you may notice that we use =const= to set variables inside the bod of the =addExclaimationMark= function. We have learned a couple ways of setting variables in ClojureScript. It may seem that our translation of =const= should use =def=.
+
+However, there is a more idiomatic way to bind variables inside a ClojureScript function: =let=. =let='s usage is best introduced by an example:
+
+#+BEGIN_SRC ClojureScript
+(defn returns-three []
+  "Returns three no matter what"
+  (let [one 1
+        two 2]
+    (+ one two)))
+#+END_SRC
+
+=let= binds =one= to =1= and =two= to =two= in its body. =let= takes a vector of pairs and binds the first variable name (=one= and =two=) to the value of the second item in the pair (=1= and =2=). It may feel a little odd that =let= does not require the variable-value pairs to be separated by commas. Since ClojureScript treats commas at white space, it is possible to do this. Most of the time, however, the pairs are grouped by line breaks. This is what we did in the =returns-three= example. 
+
+A few more notes about =let= before we use it in our port of the =addExclamationMark= function. The value in the variable-value pair need not be something as simple as a number. More commonly, it will be an expression. For instance, we could write a =returns-four= function this way:
+
+#+BEGIN_SRC 
+(defn returns-four []
+  "Returns four no matter what."
+  (let [one   (- 2 1)
+        three (+ 2 1)]
+    (+ one three)))
+#+END_SRC
+
+Additionally, the expression in the value may refer to a variable defined previously in the =let= vector.
+
+#+BEGIN_SRC 
+(defn returns-five []
+  "Returns 5 no matter what."
+  (let [two    2
+        three (+ two 1)]  ;; two is defined immediately prior!
+    (+ two three)))
+#+END_SRC
+
+Now that we know how to get and set properties, as well as how to use =let= blocks to set variables inside functions, let's try to implement  =addExclamationMark= in CLojureScript.
+
+#+BEGIN_SRC 
+(defn add-exclaimation-mark! [evt]
+  "Takes a JavaScript event, `evt` concatenates an '!' to its target element's text node."
+  (let [element (.-target evt)
+        text    (.-textContent element)]
+    (set! (.-textContent element) (str text "!"))))
+#+END_SRC
+
+It might look like we are adding an =!= on the end of the name for our function because we are adding an exclaimation mark to an element. However, that is not the reason we use it. ClojureScript has a convention of using the =!= to indicate that a function has some side effect. In other words, if a function is called for something other than its return value, put an =!= at the end of its name. In the case of =add-exclamation-mark!=, the side effect is mutating the DOM.
+
+We have stored a reference to our "Hello World" element and created a function to be called when that element is clicked on. Now we need to attach the event handling function to the element. Recall that methods are called with the method name first, then the object, then the arguments.
+
+#+BEGIN_SRC ClojureScript
+(.addEventListener exclaimer "click" add-exclaimation-mark!)
+#+END_SRC
+
+Your =hello_world.cljs= should now look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns hello-world)
+
+(def exclaimer (.querySelector js/document "#exclaim"))
+(defn add-exclaimation-mark! [evt]
+  "Takes a JavaScript event, `evt` concatenates an '!' to its target element's text node."
+  (let [element (.-target evt)
+        text    (.-textContent element)]
+    (set! (.-textContent element) (str text "!"))))
+(.addEventListener exclaimer "click" add-exclaimation-mark!)
+#+END_SRC
+
+Now we need to compile our ClojureScript. However, we still have that =hello_world.js= and =out= directory hanging around. When we move to using tools like Leiningen and Figwheel, we will have nicer ways of cleaning up and compiling ClojureScript. For now though, we need to clean up manually. =cd= into =examples/hello_world= and remove the old compiled JavaScript:
+
+#+BEGIN_SRC 
+rm -rf hello_world.js out/
+#+END_SRC
+
+Fire up your Lumo REPL from the =examples/hello_world=, and compile your =hello_world.cljs= file:
+
+#+BEGIN_SRC ClojureScript
+cljs.user=> (b/build "." {:main 'hello-world :output-to "hello_world.js"})
+             ⬆  
+WARNING: hello-world is a single segment namespace at line 1 
+nil   
+#+END_SRC
+
+Open up =index.html= in your browser, clear the cache, and click on "Hello World". Each time you click, the greeting should get an additional =!=.
+
+We might wonder: what if something had gone wrong? In JavaScript, we could simply set a breakpoint in our browser and take a look at the state of our application. Good news! You can do the same in ClojureScript.
+
+If you are using Chrome, go to the "Sources" pane in the developer tools. =CTRL-P= and search for "hello_world". You will see several files pop up -- you're looking for one with the CLJS extension. You can open it up and set breakpoints just as you can with JavaScript!
+
+The ability to use dev tools is really nice. It means we don't have to give up our browser developer tools to use ClojureScript. When we begin to use Figwheel and Clojure spec, we gain tools that make debugging and testing our code much easier.
+
+** Answers to our questions
+
+   - *How do I compile ClojureScript to JavaScript for the browser?* We used Lumo' build api from teh REPL to compile ClojureScript to JavaScript. We hinted that there are more fully featured tools for this, and mentioned Leiningen and Figwheel in particular.
+   - *How do I add ClojureScript to my page?* This turned out to simply be a matter of using a =<script>= tag with its =src= attribute set to the JavaScript file generated by Lumo's build API. We saw that there may be other JavaScript files in an =out= directory, but we didn't need to worry too much about them.
+   - *How do I interact with the DOM?* In this chapter, we used the browser API for manipulating the DOM. However, we called those JavaScript functions from ClojureScript. In later chapters we will see that ClojureScript has libraries built on React clean things up.
+   - *How do I call JavaScript methods from ClojureScript, such as =document.querySelector=?* We used the form =(.myMethod myObj "arg1")=.
+   - *How do I get properties on JavaScript objects from ClojureScript? How do I set them?* We looked at properties on an object using the form =(.-myProperty myObj)=. We set the properties on JavaScript objects by using the function =(set!)= in the following way: =(set! (.-myProperty myObject) "newValue"))=.
+
+* Footnotes
+
+[fn:2] Technically, in this case, it is a special form rather than a Clojure function that is being called.
+
+[fn:1] If you are curious, you can check ClojureScript's documentation [[https://github.com/clojure/clojurescript-site/blob/master/content/reference/compiler-options.adoc][here]].

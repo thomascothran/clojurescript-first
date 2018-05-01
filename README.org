@@ -37,9 +37,11 @@ JavaScript is a very fast-moving language, both in the library ecosystem and the
 
 While the stability of the Clojure/ClojureScript core may make it sound as though the language moves slowly, that turns out not to the be the case. ClojureScript is a lisp with a powerful macro system. You don't have to worry about understanding macros yet. But consider this example.
 
-[The map syntax macro]
+[The map syntax macro https://clojureverse.org/t/shortand-clojure-syntax-for-properties-on-hashmaps/1918/3]
 
 The ClojureScript community is much smaller than the JavaScript world. One common worry is that ClojureScript libraries won't be available, because there is a smaller community to support them. However, ClojureScript is able to interoperate with JavaScript seamlessly, and so ClojureScript can borrow from the JavaScript world....
+
+
 
 ** The Rationale for this Tutorial
 
