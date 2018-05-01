@@ -577,7 +577,7 @@ Excellent! We will learn a lot more about functions -- and about functional prog
 
 How do I see the javascript emitted? Turn verbose mode on with -v.
 
-**** Answers to Our Questions
+*** Answers to Our Questions
 
 Now we can review the questions we posed at the beginning of the chapter, and summarize the answers.
 
@@ -590,16 +590,16 @@ Now we can review the questions we posed at the beginning of the chapter, and su
   - Where is ClojureScript's documentation?
   - *Where do I go for help?* Hopefully, you managed not to get stuck in the course of the tutorial. If you have problems with the tutorial, feel free to post an issue on the repository. For general Clojure/ClojureScript help, check out [[http://clojureverse.org][the ClojureVerse forums]].
 
-**** Further reading
-     - [[https://funcool.github.io/clojurescript-unraveled/][ClojureScript Unraveled]]. /ClojureScript Unraveled/ dives deeper into ClojureScript as a language. You may find its [[https://funcool.github.io/clojurescript-unraveled/#language-the-basics][chapter on the basics of the language]] helpful for further context to the work we have done here.
-     - [[http://cljs.info][CLJS Cheat Sheet]]. Very helpful for when you just need a quick look instead of a deep dive.
-     - [[https://clojurescript.org/][ClojureScript's official site]]. ClojureScript's documentation and their guides are getting better all the time.  
-     - [[https://github.com/bbatsov/clojure-style-guide][Clojure Style Guide]]. This is an unofficial touchstone for Clojure/ClojureScript's best practices.
-     - [[https://www.youtube.com/watch?v=BThkk5zv0DE][Derik Slager's talk "Why ClojureScript"]]. An inspiring talk that helps lay out the reasons for using ClojureScript.
+*** Further reading
+    - [[https://funcool.github.io/clojurescript-unraveled/][ClojureScript Unraveled]]. /ClojureScript Unraveled/ dives deeper into ClojureScript as a language. You may find its [[https://funcool.github.io/clojurescript-unraveled/#language-the-basics][chapter on the basics of the language]] helpful for further context to the work we have done here.
+    - [[http://cljs.info][CLJS Cheat Sheet]]. Very helpful for when you just need a quick look instead of a deep dive.
+    - [[https://clojurescript.org/][ClojureScript's official site]]. ClojureScript's documentation and their guides are getting better all the time.  
+    - [[https://github.com/bbatsov/clojure-style-guide][Clojure Style Guide]]. This is an unofficial touchstone for Clojure/ClojureScript's best practices.
+    - [[https://www.youtube.com/watch?v=BThkk5zv0DE][Derik Slager's talk "Why ClojureScript"]]. An inspiring talk that helps lay out the reasons for using ClojureScript.
 
-**** Homework
-     - You were able to find high priority tasks. Use =filter= to find the low priority tasks.
-     - Try to get the second item from a vector.
-     - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
-     - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
+*** Homework
+    - You were able to find high priority tasks. Use =filter= to find the low priority tasks.
+    - Try to get the second item from a vector.
+    - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
+    - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
 
