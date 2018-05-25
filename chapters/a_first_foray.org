@@ -9,7 +9,7 @@ Learning is a process of asking questions and getting answers that allow you to 
 After this chapter, you will be able to answer these questions:
 
   - How can I execute some ClojureScript code?
-  - What are the basic data types available in ClojureScript
+  - What are the basic data types available in ClojureScript?
   - What are some of ClojureScript's collections?
   - How do I define a function? How do I execute it?
   - What are some built in functions ClojureScript gives me? How do I find the others?
@@ -102,366 +102,366 @@ Understanding the power of Clojure's syntax for function calls will come later. 
 
 We will learn more about functions in a bit. First, let's take a look at Clojure's basic data types.
 
-** Data Types and Data Structures
+*** Data Types and Data Structures
 
-In our arithmetic REPL experimentation, we have already seen some numbers. ClojureScript numbers are just JavaScript numbers. What about strings? Let's fire up the Lumo REPL and see.
+ In our arithmetic REPL experimentation, we have already seen some numbers. ClojureScript numbers are just JavaScript numbers. What about strings? Let's fire up the Lumo REPL and see.
 
-#+BEGIN_SRC 
-cljs.user=> 'hello world!'
-hello
+ #+BEGIN_SRC 
+ cljs.user=> 'hello world!'
+ hello
+              ⬆
+ WARNING: Use of undeclared Var cljs.user/world!' at line 1 
+ nil
+ #+END_SRC
+
+ Unlike JavaScript, Clojure does not allow string literals to use single quotes. This error message will not make sense to us yet. Using double quotes works just fine:
+
+ #+BEGIN_SRC  
+ cljs.user=> "hello world!"
+ "hello world!"
+ #+END_SRC
+
+ JavaScript's =+= infix operator adds numbers, but concatenates strings. Let's see if that works in ClojureScript:
+
+ #+BEGIN_SRC  
+ cljs.user=> (+ "hello" " world")
              ⬆
-WARNING: Use of undeclared Var cljs.user/world!' at line 1 
-nil
-#+END_SRC
+ WARNING: cljs.core/+, all arguments must be numbers, got [string string] instead. at line 1 
+ "hello world"
+ #+END_SRC
 
-Unlike JavaScript, Clojure does not allow string literals to use single quotes. This error message will not make sense to us yet. Using double quotes works just fine:
+ Apparently not. How do we go about finding a function that does concatenate strings?
 
-#+BEGIN_SRC  
-cljs.user=> "hello world!"
-"hello world!"
-#+END_SRC
+ ClojureScript comes with a built in function called =find-doc= that searches doc strings of functions we can use. Let's try it:
 
-JavaScript's =+= infix operator adds numbers, but concatenates strings. Let's see if that works in ClojureScript:
+ #+BEGIN_SRC 
+ (find-doc "concatenation")
+ -------------------------
+ cljs.core/lazy-cat
+ ([& colls])
+ Macro
+   Expands to code which yields a lazy sequence of the concatenation
+   of the supplied colls.  Each coll expr is not evaluated until it is
+   needed.
 
-#+BEGIN_SRC  
-cljs.user=> (+ "hello" " world")
-            ⬆
-WARNING: cljs.core/+, all arguments must be numbers, got [string string] instead. at line 1 
-"hello world"
-#+END_SRC
+   (lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))
+ -------------------------
+ -------------------------
+ cljs.core/str
+ ([] [x] [x & ys])
+   With no args, returns the empty string. With one arg x, returns
+   x.toString().  (str nil) returns the empty string. With more than
+   one arg, returns the concatenation of the str values of the args.
+ -------------------------
+ clojure.core.rrb-vector
+   An implementation of the confluently persistent vector data
+   structure introduced in Bagwell, Rompf, "RRB-Trees: Efficient
+   Immutable Vectors", EPFL-REPORT-169879, September, 2011.
 
-Apparently not. How do we go about finding a function that does concatenate strings?
+   RRB-Trees build upon Clojure's PersistentVectors, adding logarithmic
+   time concatenation and slicing.
 
-ClojureScript comes with a built in function called =find-doc= that searches doc strings of functions we can use. Let's try it:
+   The main API entry points are clojure.core.rrb-vector/catvec,
+   performing vector concatenation, and clojure.core.rrb-vector/subvec,
+   which produces a new vector containing the appropriate subrange of
+   the input vector (in contrast to cljs.core/subvec, which returns a
+   view on the input vector).
 
-#+BEGIN_SRC 
-(find-doc "concatenation")
--------------------------
-cljs.core/lazy-cat
-([& colls])
-Macro
-  Expands to code which yields a lazy sequence of the concatenation
-  of the supplied colls.  Each coll expr is not evaluated until it is
-  needed.
+   The implementation allows for seamless interoperability with
+   cljs.core/PersistentVector and cljs.core.Subvec instances:
+   clojure.core.rrb-vector/catvec and clojure.core.rrb-vector/subvec
+   convert their inputs to clojure.core.rrb-vector.rrbt/Vector
+   instances whenever necessary (this is a very fast constant time
+   operation for PersistentVector; for Subvec it is O(log n), where n
+   is the size of the underlying vector).
 
-  (lazy-cat xs ys zs) === (concat (lazy-seq xs) (lazy-seq ys) (lazy-seq zs))
--------------------------
--------------------------
-cljs.core/str
-([] [x] [x & ys])
-  With no args, returns the empty string. With one arg x, returns
-  x.toString().  (str nil) returns the empty string. With more than
-  one arg, returns the concatenation of the str values of the args.
--------------------------
-clojure.core.rrb-vector
-  An implementation of the confluently persistent vector data
-  structure introduced in Bagwell, Rompf, "RRB-Trees: Efficient
-  Immutable Vectors", EPFL-REPORT-169879, September, 2011.
+   clojure.core.rrb-vector also exports its own versions of vector and
+   vec which always produce clojure.core.rrb-vector.rrbt.Vector
+   instances.
+ nil
 
-  RRB-Trees build upon Clojure's PersistentVectors, adding logarithmic
-  time concatenation and slicing.
+ #+END_SRC
 
-  The main API entry points are clojure.core.rrb-vector/catvec,
-  performing vector concatenation, and clojure.core.rrb-vector/subvec,
-  which produces a new vector containing the appropriate subrange of
-  the input vector (in contrast to cljs.core/subvec, which returns a
-  view on the input vector).
+ If you scroll through the answer, you might think =cljs.core/str= looks promising. Let's try it:
 
-  The implementation allows for seamless interoperability with
-  cljs.core/PersistentVector and cljs.core.Subvec instances:
-  clojure.core.rrb-vector/catvec and clojure.core.rrb-vector/subvec
-  convert their inputs to clojure.core.rrb-vector.rrbt/Vector
-  instances whenever necessary (this is a very fast constant time
-  operation for PersistentVector; for Subvec it is O(log n), where n
-  is the size of the underlying vector).
+ #+BEGIN_SRC 
+ cljs.user=> (cljs.core/str "hello " "world")
+ "hello world"
+ #+END_SRC
 
-  clojure.core.rrb-vector also exports its own versions of vector and
-  vec which always produce clojure.core.rrb-vector.rrbt.Vector
-  instances.
-nil
+ Nice! We got what we wanted, but it is not yet clear what the significations of the =.= and the =/= is in the function =cljs.core/str=. =cljs.core= is the namespace for the function =str=. Conveniently for us, we don't need to worry about namespaces yet, because everything in =cljs.core= can just be called directly. Like this:
 
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (str "hello " "world")
+ "hello world"
+ #+END_SRC
 
-If you scroll through the answer, you might think =cljs.core/str= looks promising. Let's try it:
+ There are a few other downsides to =find-doc=. We had to scroll through some dense docstrings, and the answer doesn't always jump out. Even less conveniently, had we searched for "concatenate", =str= would not have appeared in the results. Finally, =find-doc= only works on libraries that are available in our namespace, and we have not learned about namespaces yet. A more convienent way to find ClojureScript functions would be to look at the cheat sheet at [[http://cljs.info/cheatsheet/][http://cljs.info/cheatsheet/]]. Between =find-doc=, the cheat sheet, and Google, you should be able to find the built in functions you need fairly quickly.
 
-#+BEGIN_SRC 
-cljs.user=> (cljs.core/str "hello " "world")
-"hello world"
-#+END_SRC
+ But we are side tracked into functions again. Let's return to data types. We've met ClojureScript's numbers and strings. But unless we just want to use Clojure to do arithmetic or write copy, we need a way of organizing these primitive data types. Arrays in JavaScript are quite handy. Let's see what ClojureScript can do. Open up Lumo again:
 
-Nice! We got what we wanted, but it is not yet clear what the significations of the =.= and the =/= is in the function =cljs.core/str=. =cljs.core= is the namespace for the function =str=. Conveniently for us, we don't need to worry about namespaces yet, because everything in =cljs.core= can just be called directly. Like this:
+ #+BEGIN_SRC 
+ cljs.user=> [1 2 3 4]
+ [1 2 3 4]
+ #+END_SRC
 
-#+BEGIN_SRC 
-cljs.user=> (str "hello " "world")
-"hello world"
-#+END_SRC
+ Well, that was easy. This looks a lot like an array in JavaScript, sans the commas. What if we added commas?
 
-There are a few other downsides to =find-doc=. We had to scroll through some dense docstrings, and the answer doesn't always jump out. Even less conveniently, had we searched for "concatenate", =str= would not have appeared in the results. Finally, =find-doc= only works on libraries that are available in our namespace, and we have not learned about namespaces yet. A more convienent way to find ClojureScript functions would be to look at the cheat sheet at [[http://cljs.info/cheatsheet/][http://cljs.info/cheatsheet/]]. Between =find-doc=, the cheat sheet, and Google, you should be able to find the built in functions you need fairly quickly.
+ #+BEGIN_SRC 
+ cljs.user=> [1, 2, 3, 4]
+ [1 2 3 4]
+ #+END_SRC
 
-But we are side tracked into functions again. Let's return to data types. We've met ClojureScript's numbers and strings. But unless we just want to use Clojure to do arithmetic or write copy, we need a way of organizing these primitive data types. Arrays in JavaScript are quite handy. Let's see what ClojureScript can do. Open up Lumo again:
+ ClojureScript lets us use commas, treating them as whitespace. This looks like a JavaScript array. But is it? The answer is no. ClojureScript has different types of collections, and what we are looking at is a vector. Let's prove it:
 
-#+BEGIN_SRC 
-cljs.user=> [1 2 3 4]
-[1 2 3 4]
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (type [1 2 3 4])
+ cljs.core/PersistentVector
+ #+END_SRC
 
-Well, that was easy. This looks a lot like an array in JavaScript, sans the commas. What if we added commas?
+ JavaScript arrays and vectors do not just differ in name. A ClojureScript vector is an immutable, persistent data structure; a JavaScript array is mutable. Moreover, ClojureScript has more than one list-like data structure. It also has, for instance, lists.
 
-#+BEGIN_SRC 
-cljs.user=> [1, 2, 3, 4]
-[1 2 3 4]
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (type (list 1 2 3 4))
+ cljs.core/List
+ #+END_SRC
 
-ClojureScript lets us use commas, treating them as whitespace. This looks like a JavaScript array. But is it? The answer is no. ClojureScript has different types of collections, and what we are looking at is a vector. Let's prove it:
+ And we can always use the trusty JavaScript array if we need to:
 
-#+BEGIN_SRC 
-cljs.user=> (type [1 2 3 4])
-cljs.core/PersistentVector
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (array 1 2 3 4)
+ #js [1 2 3 4]
+ #+END_SRC
 
-JavaScript arrays and vectors do not just differ in name. A ClojureScript vector is an immutable, persistent data structure; a JavaScript array is mutable. Moreover, ClojureScript has more than one list-like data structure. It also has, for instance, lists.
+ But we will see that ClojureScript has its own data structures for a reason. We don't need to worry too much about the differences between vectors, lists, and arrays for the moment. If in doubt, use an array.
 
-#+BEGIN_SRC 
-cljs.user=> (type (list 1 2 3 4))
-cljs.core/List
-#+END_SRC
+ Other than making lists for the joy of making lists, what can we do with them. If I have a task list, I might like to see what is first up. =(find-doc "first")= returns a bunch of results. But a function called =first+ is featured on the CLJS cheat sheet in the Vectors section. Let's try it at the Lumo REPL:
 
-And we can always use the trusty JavaScript array if we need to:
-
-#+BEGIN_SRC 
-cljs.user=> (array 1 2 3 4)
-#js [1 2 3 4]
-#+END_SRC
-
-But we will see that ClojureScript has its own data structures for a reason. We don't need to worry too much about the differences between vectors, lists, and arrays for the moment. If in doubt, use an array.
-
-Other than making lists for the joy of making lists, what can we do with them. If I have a task list, I might like to see what is first up. =(find-doc "first")= returns a bunch of results. But a function called =first+ is featured on the CLJS cheat sheet in the Vectors section. Let's try it at the Lumo REPL:
-
-#+BEGIN_SRC 
-cljs.user=> (first ["pay bills" "take out trash" "mow lawn"])
-"pay bills"
-#+END_SRC
-
-Or maybe I want to know what I have coming up on my task list:
-
-#+BEGIN_SRC 
-cljs.user=> (rest ["pay bills" "take out trash" "mow lawn"])
-("take out trash" "mow lawn")
-#+END_SRC
-
-Our call to =rest= returned something with parentheses instead of square brackets. But we said we wouldn't worry about anything except vectors for the moment. How about we add some things to our task list.
-
-#+BEGIN_SRC 
-cljs.user=> (conj ["pay bills" "take out trash" "mow lawn"] "get oil changed" )
-["pay bills" "take out trash" "mow lawn" "get oil changed"]
-#+END_SRC
-
-Writing up a task list is more fun than executing on it, but writing the same task list each time is redundant. How do we hold on to the list? In JavaScript, we could do something like
-
-#+BEGIN_SRC JavaScript
-var taskList = ["get oil changed", "pay bills", "take out trash", "mow lawn"]
-#+END_SRC
-
-In ClojureScript, we can use =def=. Like this:
-
-#+BEGIN_SRC 
-cljs.user=> (def task-list ["get oil changed" "pay bills" "take out trash" "mow lawn"])
-#'cljs.user/task-list
-cljs.user=> task-list
-["get oil changed" "pay bills" "take out trash" "mow lawn"]
-#+END_SRC
-
-Now we can just refer to =task-list= instead of typing the list each time. Let's add another task:
-
-#+BEGIN_SRC 
-cljs.user=> (conj "write essay" task-list)
-No protocol method ICollection.-conj defined for type string: write essay
-         Object.cljs.core.missing_protocol (NO_SOURCE_FILE <embedded>:275:274)
-         Object.cljs.core._conj (NO_SOURCE_FILE <embedded>:358:412)
-         Function.cljs.core.conj.cljs$core$IFn$_invoke$arity$2 (NO_SOURCE_FILE <embedded>:570:249)
-         cljs.core.conj (NO_SOURCE_FILE <embedded>:569:216)
-         (evalmachine.<anonymous>:1:16)
-         ContextifyScript.Script.runInThisContext (vm.cljs:50:33)
-         Object.runInThisContext (vm.cljs:152:38)
-         (Object._t)
-         (Object.lumo.repl.caching_node_eval)
-         (NO_SOURCE_FILE <embedded>:6127:273)
-#+END_SRC
-
-We had the order of our arguments switched around. Which raises the question: how do we know what the order of the arguments should be? Lumo reminds us every time it starts that we can use =doc= to read the docstring of a function. Let's try that:
-
-#+BEGIN_SRC 
-cljs.user=> (doc conj)
--------------------------
-cljs.core/conj
-([] [coll] [coll x] [coll x & xs])
-  conj[oin]. Returns a new collection with the xs
-  'added'. (conj nil item) returns (item).  The 'addition' may
-  happen at different 'places' depending on the concrete type.
-nil
-#+END_SRC
-
-Don't worry if this docstring doesn't make sense quite yet. We haven't discussed yet how to define functions. The docstring for =conj= does seem to be telling us that the collection comes before the thing we want to add to the collection. Let's give it a shot.
-
-#+BEGIN_SRC 
-cljs.user=> (conj task-list "write essay")
-["get oil changed"
+ #+BEGIN_SRC 
+ cljs.user=> (first ["pay bills" "take out trash" "mow lawn"])
  "pay bills"
- "take out trash"
- "mow lawn"
- "write essay"]
-#+END_SRC
+ #+END_SRC
 
-We added "write essay" to our =task-list= at the end (where our essay writing ambitions always seem to be). So if we take a look at task-list after =conj=\ing "write essay" onto the end, what will we see?
+ Or maybe I want to know what I have coming up on my task list:
 
-#+BEGIN_SRC 
-cljs.user=> task-list
-["get oil changed" "pay bills" "take out trash" "mow lawn"]
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (rest ["pay bills" "take out trash" "mow lawn"])
+ ("take out trash" "mow lawn")
+ #+END_SRC
 
-No "write essay" task. Remember that vectors are immutable. Just as concatenating strings in JavaScript leaves the original string unchanged, so operations on vectors returns a new vector.
+ Our call to =rest= returned something with parentheses instead of square brackets. But we said we wouldn't worry about anything except vectors for the moment. How about we add some things to our task list.
 
-There is a lot more to be said about vectors. How do we loop through a vector? How do we get an item at an index? We will have to postpone these questions for later. For now, we are just trying to get a sense of the ClojureScript landscape.
+ #+BEGIN_SRC 
+ cljs.user=> (conj ["pay bills" "take out trash" "mow lawn"] "get oil changed" )
+ ["pay bills" "take out trash" "mow lawn" "get oil changed"]
+ #+END_SRC
 
-Let's turn to the another collection we should meet right away: the map. Suppose we want more information about our tasks. It would be nice to have a way to prioritize our tasks. ClojureScript's map is perfect for structuring information.
+ Writing up a task list is more fun than executing on it, but writing the same task list each time is redundant. How do we hold on to the list? In JavaScript, we could do something like
 
-#+BEGIN_SRC 
-cljs.user=> (def trash {:description "take out trash" :priority 1})
-#'cljs.user/trash
-cljs.user=> trash
-{:description "take out trash", :priority 1}
-#+END_SRC
+ #+BEGIN_SRC JavaScript
+ var taskList = ["get oil changed", "pay bills", "take out trash", "mow lawn"]
+ #+END_SRC
 
-We used =def= to assign the var =trash= to our new map. Then we gave the REPL the var =trash=, and it gave us back the map.
+ In ClojureScript, we can use =def=. Like this:
 
-In some ways, ClojureScript's literal syntax looks like JavaScript's object literal. Both use the curly brace. However, much like with the array, ClojureScript doesn't require key value pairs to be separated by commas (though you can use commas if you really want to). The other difference is that the colon is on the other side of the key.
+ #+BEGIN_SRC 
+ cljs.user=> (def task-list ["get oil changed" "pay bills" "take out trash" "mow lawn"])
+ #'cljs.user/task-list
+ cljs.user=> task-list
+ ["get oil changed" "pay bills" "take out trash" "mow lawn"]
+ #+END_SRC
 
-Object properties in JavaScript are typically strings, though they need not be placed inside quotation marks. In the ClojureScript map =trash=, however, the keys are not strings. Let's test this out at the REPL:
+ Now we can just refer to =task-list= instead of typing the list each time. Let's add another task:
 
-#+BEGIN_SRC 
-cljs.user=> {:a 1 :b 2}
-{:a 1, :b 2}
-cljs.user=> {"a" 1 "b" 2}
-{"a" 1, "b" 2}
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (conj "write essay" task-list)
+ No protocol method ICollection.-conj defined for type string: write essay
+          Object.cljs.core.missing_protocol (NO_SOURCE_FILE <embedded>:275:274)
+          Object.cljs.core._conj (NO_SOURCE_FILE <embedded>:358:412)
+          Function.cljs.core.conj.cljs$core$IFn$_invoke$arity$2 (NO_SOURCE_FILE <embedded>:570:249)
+          cljs.core.conj (NO_SOURCE_FILE <embedded>:569:216)
+          (evalmachine.<anonymous>:1:16)
+          ContextifyScript.Script.runInThisContext (vm.cljs:50:33)
+          Object.runInThisContext (vm.cljs:152:38)
+          (Object._t)
+          (Object.lumo.repl.caching_node_eval)
+          (NO_SOURCE_FILE <embedded>:6127:273)
+ #+END_SRC
 
-If we are still skeptical, we can use ClojureScript's === function to test for equality. First, let's double check that we have the correct function with the built-in =doc= function:
+ We had the order of our arguments switched around. Which raises the question: how do we know what the order of the arguments should be? Lumo reminds us every time it starts that we can use =doc= to read the docstring of a function. Let's try that:
 
-#+BEGIN_SRC 
-cljs.user=> (doc =)
--------------------------
-cljs.core/=
-([x] [x y] [x y & more])
-  Equality. Returns true if x equals y, false if not. Compares
-  numbers and collections in a type-independent manner.  Clojure's immutable data
-  structures define -equiv (and thus =) as a value, not an identity,
-  comparison.
-nil
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (doc conj)
+ -------------------------
+ cljs.core/conj
+ ([] [coll] [coll x] [coll x & xs])
+   conj[oin]. Returns a new collection with the xs
+   'added'. (conj nil item) returns (item).  The 'addition' may
+   happen at different 'places' depending on the concrete type.
+ nil
+ #+END_SRC
 
-Looks like === is what we need. Now let's test our theory that the symbols with the colons are not strings:
+ Don't worry if this docstring doesn't make sense quite yet. We haven't discussed yet how to define functions. The docstring for =conj= does seem to be telling us that the collection comes before the thing we want to add to the collection. Let's give it a shot.
 
-#+BEGIN_SRC 
-cljs.user=> (= {:a 1 :b 2} {"a" 1 "b" 2})
-false
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> (conj task-list "write essay")
+ ["get oil changed"
+  "pay bills"
+  "take out trash"
+  "mow lawn"
+  "write essay"]
+ #+END_SRC
 
-So what are =:a= and =:b=? We can consult the REPL, using the built in =type= function:
+ We added "write essay" to our =task-list= at the end (where our essay writing ambitions always seem to be). So if we take a look at task-list after =conj=\ing "write essay" onto the end, what will we see?
 
-#+BEGIN_SRC 
-cljs.user=> (type :a)
-cljs.core/Keyword
-#+END_SRC
+ #+BEGIN_SRC 
+ cljs.user=> task-list
+ ["get oil changed" "pay bills" "take out trash" "mow lawn"]
+ #+END_SRC
 
-The keyword is a new data type. It is a symbol which evaluates to itself. That may not sound particularly significant at the moment, and that is perfectly fine. You can think of keywords as a lot like strings, with some special abilities. For instance: how do we get information out of a map? How would we get the priority of the =trash= task map we defined earlier?
+ No "write essay" task. Remember that vectors are immutable. Just as concatenating strings in JavaScript leaves the original string unchanged, so operations on vectors returns a new vector.
 
-#+BEGIN_SRC 
-cljs.user=> (:priority trash)
-1
-#+END_SRC
+ There is a lot more to be said about vectors. How do we loop through a vector? How do we get an item at an index? We will have to postpone these questions for later. For now, we are just trying to get a sense of the ClojureScript landscape.
 
-Keywords can look themselves up in dictionaries. Strings can't:
+ Let's turn to the another collection we should meet right away: the map. Suppose we want more information about our tasks. It would be nice to have a way to prioritize our tasks. ClojureScript's map is perfect for structuring information.
 
-#+BEGIN_SRC 
-cljs.user=> (def str-map {"a" 1})
-#'cljs.user/str-map
-cljs.user=> ("a" 1)
-"a".call is not a function
-         (evalmachine.<anonymous>:1:5)
-         ContextifyScript.Script.runInThisContext (vm.cljs:50:33)
-         Object.runInThisContext (vm.cljs:152:38)
-         (Object._t)
-         (Object.lumo.repl.caching_node_eval)
-         (NO_SOURCE_FILE <embedded>:6127:273)
-         E (NO_SOURCE_FILE <embedded>:6128:269)
-         Object.cljs.js.eval_str_STAR_ (NO_SOURCE_FILE <embedded>:6129:373)
-         Function.cljs.js.eval_str.cljs$core$IFn$_invoke$arity$5 (NO_SOURCE_FILE <embedded>:6132:508)
-         Object.lumo.repl.execute_text (NO_SOURCE_FILE <embedded>:6621:475)
-#+END_SRC
-
-Keywords will likely feel strange to you if you are new to Clojure. For now, if you know how to use them as map keys, and you know how use keywords to get values out of maps, that is more than good enough.
-
-Vectors and maps can be nested. Let's continue to convert our task list from strings to maps.
-
-#+BEGIN_SRC 
-{cljs.user=> (def bills {:description "pay bills" :priority 2})
-#'cljs.user/bills
-cljs.user=> (def oil {:description "Change oil" :priority 4})
-#'cljs.user/oil
-cljs.user=> (def mow-lawn {:description "Mow lawn" :priority 2})
-#'cljs.user/mow-lawn
-cljs.user=> (def task-list [bills trash oil mow-lawn write-essay])
-#cljs.user=> task-list
-[{:description "pay bills", :priority 2}
+ #+BEGIN_SRC 
+ cljs.user=> (def trash {:description "take out trash" :priority 1})
+ #'cljs.user/trash
+ cljs.user=> trash
  {:description "take out trash", :priority 1}
- {:description "Change oil", :priority 4}
- {:description "Mow lawn", :priority 2}
- {:description "Write essay", :priority 5}]
-'cljs.user/task-list
-#+END_SRC
+ #+END_SRC
 
-We forgot something: the essay! How do we add it in? Remember our friend =conj=?
+ We used =def= to assign the var =trash= to our new map. Then we gave the REPL the var =trash=, and it gave us back the map.
 
-#+BEGIN_SRC 
-cljs.user=> (def task-list (conj task-list {:description "Write essay" :priority 5}))
-#'cljs.user/task-list
-cljs.user=> task-list
-[{:description "pay bills", :priority 2}
- {:description "take out trash", :priority 1}
- {:description "Change oil", :priority 4}
- {:description "Mow lawn", :priority 2}
- {:description "Write essay", :priority 5}
- {:description "Write essay", :priority 5}]
-#+END_SRC
+ In some ways, ClojureScript's literal syntax looks like JavaScript's object literal. Both use the curly brace. However, much like with the array, ClojureScript doesn't require key value pairs to be separated by commas (though you can use commas if you really want to). The other difference is that the colon is on the other side of the key.
 
-Note that we had to use =def= again to redefine task list. When we dive deeper into functional programming, we will discover that redefining vars should be avoided.
+ Object properties in JavaScript are typically strings, though they need not be placed inside quotation marks. In the ClojureScript map =trash=, however, the keys are not strings. Let's test this out at the REPL:
 
-We used =conj= to add something to a vector. But what if we want to add something to a map? If we consult the handy CLJS Cheat Sheet, we see =assoc= function. That looks promising. We can double check its docstring:
+ #+BEGIN_SRC 
+ cljs.user=> {:a 1 :b 2}
+ {:a 1, :b 2}
+ cljs.user=> {"a" 1 "b" 2}
+ {"a" 1, "b" 2}
+ #+END_SRC
 
-#+BEGIN_SRC 
-cljs.user=> (doc assoc)
--------------------------
-cljs.core/assoc
-([coll k v] [coll k v & kvs])
-  assoc[iate]. When applied to a map, returns a new map of the
-   same (hashed/sorted) type, that contains the mapping of key(s) to
-   val(s). When applied to a vector, returns a new vector that
-   contains val at index.
-nil
-#+END_SRC
+ If we are still skeptical, we can use ClojureScript's === function to test for equality. First, let's double check that we have the correct function with the built-in =doc= function:
 
-And, interestingly, we find that it works on vectors too. Let's see if we can use it to change a map:
+ #+BEGIN_SRC 
+ cljs.user=> (doc =)
+ -------------------------
+ cljs.core/=
+ ([x] [x y] [x y & more])
+   Equality. Returns true if x equals y, false if not. Compares
+   numbers and collections in a type-independent manner.  Clojure's immutable data
+   structures define -equiv (and thus =) as a value, not an identity,
+   comparison.
+ nil
+ #+END_SRC
 
-#+BEGIN_SRC 
-cljs.user=> (def learn-cljs {:description "Learn ClojureScript"})
-#'cljs.user/learn-cljs
-cljs.user=> (assoc learn-cljs :priority 1)
-{:description "Learn ClojureScript", :priority 1}
-cljs.user=> learn-cljs
-{:description "Learn ClojureScript"}
-#+END_SRC
+ Looks like === is what we need. Now let's test our theory that the symbols with the colons are not strings:
 
-Notice that although we said we were "changing" the =learn-cljs= map, in ClojureScript that often turns out to be a figure of speech. Maps are immutable data structures. When we "change" them with something like =assoc=, we are really returning a new copy.
+ #+BEGIN_SRC 
+ cljs.user=> (= {:a 1 :b 2} {"a" 1 "b" 2})
+ false
+ #+END_SRC
+
+ So what are =:a= and =:b=? We can consult the REPL, using the built in =type= function:
+
+ #+BEGIN_SRC 
+ cljs.user=> (type :a)
+ cljs.core/Keyword
+ #+END_SRC
+
+ The keyword is a new data type. It is a symbol which evaluates to itself. That may not sound particularly significant at the moment, and that is perfectly fine. You can think of keywords as a lot like strings, with some special abilities. For instance: how do we get information out of a map? How would we get the priority of the =trash= task map we defined earlier?
+
+ #+BEGIN_SRC 
+ cljs.user=> (:priority trash)
+ 1
+ #+END_SRC
+
+ Keywords can look themselves up in dictionaries. Strings can't:
+
+ #+BEGIN_SRC 
+ cljs.user=> (def str-map {"a" 1})
+ #'cljs.user/str-map
+ cljs.user=> ("a" 1)
+ "a".call is not a function
+          (evalmachine.<anonymous>:1:5)
+          ContextifyScript.Script.runInThisContext (vm.cljs:50:33)
+          Object.runInThisContext (vm.cljs:152:38)
+          (Object._t)
+          (Object.lumo.repl.caching_node_eval)
+          (NO_SOURCE_FILE <embedded>:6127:273)
+          E (NO_SOURCE_FILE <embedded>:6128:269)
+          Object.cljs.js.eval_str_STAR_ (NO_SOURCE_FILE <embedded>:6129:373)
+          Function.cljs.js.eval_str.cljs$core$IFn$_invoke$arity$5 (NO_SOURCE_FILE <embedded>:6132:508)
+          Object.lumo.repl.execute_text (NO_SOURCE_FILE <embedded>:6621:475)
+ #+END_SRC
+
+ Keywords will likely feel strange to you if you are new to Clojure. For now, if you know how to use them as map keys, and you know how use keywords to get values out of maps, that is more than good enough.
+
+ Vectors and maps can be nested. Let's continue to convert our task list from strings to maps.
+
+ #+BEGIN_SRC 
+ {cljs.user=> (def bills {:description "pay bills" :priority 2})
+ #'cljs.user/bills
+ cljs.user=> (def oil {:description "Change oil" :priority 4})
+ #'cljs.user/oil
+ cljs.user=> (def mow-lawn {:description "Mow lawn" :priority 2})
+ #'cljs.user/mow-lawn
+ cljs.user=> (def task-list [bills trash oil mow-lawn write-essay])
+ #cljs.user=> task-list
+ [{:description "pay bills", :priority 2}
+  {:description "take out trash", :priority 1}
+  {:description "Change oil", :priority 4}
+  {:description "Mow lawn", :priority 2}
+  {:description "Write essay", :priority 5}]
+ 'cljs.user/task-list
+ #+END_SRC
+
+ We forgot something: the essay! How do we add it in? Remember our friend =conj=?
+
+ #+BEGIN_SRC 
+ cljs.user=> (def task-list (conj task-list {:description "Write essay" :priority 5}))
+ #'cljs.user/task-list
+ cljs.user=> task-list
+ [{:description "pay bills", :priority 2}
+  {:description "take out trash", :priority 1}
+  {:description "Change oil", :priority 4}
+  {:description "Mow lawn", :priority 2}
+  {:description "Write essay", :priority 5}
+  {:description "Write essay", :priority 5}]
+ #+END_SRC
+
+ Note that we had to use =def= again to redefine task list. When we dive deeper into functional programming, we will discover that redefining vars should be avoided.
+
+ We used =conj= to add something to a vector. But what if we want to add something to a map? If we consult the handy CLJS Cheat Sheet, we see =assoc= function. That looks promising. We can double check its docstring:
+
+ #+BEGIN_SRC 
+ cljs.user=> (doc assoc)
+ -------------------------
+ cljs.core/assoc
+ ([coll k v] [coll k v & kvs])
+   assoc[iate]. When applied to a map, returns a new map of the
+    same (hashed/sorted) type, that contains the mapping of key(s) to
+    val(s). When applied to a vector, returns a new vector that
+    contains val at index.
+ nil
+ #+END_SRC
+
+ And, interestingly, we find that it works on vectors too. Let's see if we can use it to change a map:
+
+ #+BEGIN_SRC 
+ cljs.user=> (def learn-cljs {:description "Learn ClojureScript"})
+ #'cljs.user/learn-cljs
+ cljs.user=> (assoc learn-cljs :priority 1)
+ {:description "Learn ClojureScript", :priority 1}
+ cljs.user=> learn-cljs
+ {:description "Learn ClojureScript"}
+ #+END_SRC
+
+ Notice that although we said we were "changing" the =learn-cljs= map, in ClojureScript that often turns out to be a figure of speech. Maps are immutable data structures. When we "change" them with something like =assoc=, we are really returning a new copy.
 
 **** Functions
 
@@ -577,7 +577,7 @@ Excellent! We will learn a lot more about functions -- and about functional prog
 
 How do I see the javascript emitted? Turn verbose mode on with -v.
 
-*** Answers to Our Questions
+** Answers to Our Questions
 
 Now we can review the questions we posed at the beginning of the chapter, and summarize the answers.
 
@@ -590,16 +590,16 @@ Now we can review the questions we posed at the beginning of the chapter, and su
   - Where is ClojureScript's documentation?
   - *Where do I go for help?* Hopefully, you managed not to get stuck in the course of the tutorial. If you have problems with the tutorial, feel free to post an issue on the repository. For general Clojure/ClojureScript help, check out [[http://clojureverse.org][the ClojureVerse forums]].
 
-*** Further reading
-    - [[https://funcool.github.io/clojurescript-unraveled/][ClojureScript Unraveled]]. /ClojureScript Unraveled/ dives deeper into ClojureScript as a language. You may find its [[https://funcool.github.io/clojurescript-unraveled/#language-the-basics][chapter on the basics of the language]] helpful for further context to the work we have done here.
-    - [[http://cljs.info][CLJS Cheat Sheet]]. Very helpful for when you just need a quick look instead of a deep dive.
-    - [[https://clojurescript.org/][ClojureScript's official site]]. ClojureScript's documentation and their guides are getting better all the time.  
-    - [[https://github.com/bbatsov/clojure-style-guide][Clojure Style Guide]]. This is an unofficial touchstone for Clojure/ClojureScript's best practices.
-    - [[https://www.youtube.com/watch?v=BThkk5zv0DE][Derik Slager's talk "Why ClojureScript"]]. An inspiring talk that helps lay out the reasons for using ClojureScript.
+** Further reading
+   - [[https://funcool.github.io/clojurescript-unraveled/][ClojureScript Unraveled]]. /ClojureScript Unraveled/ dives deeper into ClojureScript as a language. You may find its [[https://funcool.github.io/clojurescript-unraveled/#language-the-basics][chapter on the basics of the language]] helpful for further context to the work we have done here.
+   - [[http://cljs.info][CLJS Cheat Sheet]]. Very helpful for when you just need a quick look instead of a deep dive.
+   - [[https://clojurescript.org/][ClojureScript's official site]]. ClojureScript's documentation and their guides are getting better all the time.  
+   - [[https://github.com/bbatsov/clojure-style-guide][Clojure Style Guide]]. This is an unofficial touchstone for Clojure/ClojureScript's best practices.
+   - [[https://www.youtube.com/watch?v=BThkk5zv0DE][Derik Slager's talk "Why ClojureScript"]]. An inspiring talk that helps lay out the reasons for using ClojureScript.
 
-*** Homework
-    - You were able to find high priority tasks. Use =filter= to find the low priority tasks.
-    - Try to get the second item from a vector.
-    - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
-    - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
+** Homework
+   - You were able to find high priority tasks. Use =filter= to find the low priority tasks.
+   - Try to get the second item from a vector.
+   - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
+   - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
 

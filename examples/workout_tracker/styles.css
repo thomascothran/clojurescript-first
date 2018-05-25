@@ -1,0 +1,19 @@
+.navbar-brand img {
+    max-height: 3rem;
+}
+.navbar-brand a {
+    color: #5ab515;
+    transition: color 1s;
+}
+.navbar-brand a:hover {
+    color: #47821a
+}
+.main-content {
+    min-height: 80vh
+}
+.modal button.submit {
+    background-color: #5ab515;
+}
+.hidden {
+    display: none;
+}

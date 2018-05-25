@@ -1,0 +1,1044 @@
+* ClojureScript Tooling
+
+In the last chapter, we compiled some very simple ClojureScript and executed it in the browser. While this helps teach how ClojureScript works, the development experience could be nicer.
+
+Specifically, we would like for any changes in our code to be automatically loaded into the browser. It would be nice if we didn't lose the state of our application when this happens. And it would be incredibly convenient if we could run our REPL right in the browser. In this chapter, we will accomplish all these goals.
+
+Until now, we have not had to use the JVM. However, to get state of the art ClojureScript tooling, we will need to add the JVM to our stack. JavaScript developers have differing perceptions of the JVM. A significant faction of JavaScript developers seem to think that the JVM is slow or bloated. In fact, the JVM is far faster [[https://benchmarksgame-team.pages.debian.net/benchmarksgame/faster/javascript.html][on most benchmarks]] than V8, and has support for multi-threading. 
+
+However, the JVM has a slower startup time, and the startup time for Clojure on the JVM is especially slow. This will be noticeable when you use ClojureScript's JVM tooling. This turns out not to matter in most cases, because Leinengen and Figwheel reload code for you as it changes, and you will not need to restart a REPL or server very often.
+
+** Questions we will answer
+
+   - What is the standard in ClojureScript tooling and how do I install it?
+   - How do I reload my ClojureScript code into the browser as I change it?
+   - How do I run a REPL in the browser?
+   - How do I fire browser events from the REPL?
+   - How do I keep the state of my ClojureScript application in the browser when my code is reloaded?
+
+** What we will do
+
+We will start by installing the JVM and Leinengen. Then we create a minimal ClojureScript project so that we can see how these are structured. In order to get hot code reloading, we will add a Leinengen plugin called Figwheel.
+
+In order to see our new toolchain in action, we will create a workout logger. The user will be able to add an exercise, record repetitions and sets, and see the workout displayed to them on the screen. We will not, however, persist this information to a backend. This application will be written in ClojureScript and compiled with Leinengen.
+
+As we manipulate the DOM we will start to see that relying on the browser's API does not result in particularly functional code. We will conclude by considering the drawbacks of direct DOM manipulation. This anticipates the next chapter, which explains ClojureScript's approach to functional programming.
+
+All code for this exercise will be in =examples/workout_tracker=. This tutorial draws heavily on the excellent [[https://github.com/bhauman/lein-figwheel/wiki/Quick-Start][Fighweel Quick Start]].
+
+** Practicum
+
+*** Installing Leinengen 
+
+You will need Java 8 to run Leinengen. Follow these instructions to install Java 8 on your operating system.
+
+| Operating System     | Instructions                                                 |
+|----------------------+--------------------------------------------------------------|
+| Linux - Debian based | Run =sudo apt-get install openjdk-8-jre=                     |
+| Linux - RHEL based   | Run =su -c "yum install java-1.8.0-openjdk"=                 |
+| Mac                  | Follow the instructions [[https://docs.oracle.com/javase/8/docs/technotes/guides/install/mac_jdk.html][here]] to install JDK 8                |
+| Windows              | Select the Java SE Development Kit download for Windows [[http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html][here]] |
+
+After you've installed Java 8, follow Leiningen's installation instructions [[https://github.com/technomancy/leiningen#installation][here]]. After following those instructions, you should be able to run the following at the command line:
+
+#+BEGIN_SRC 
+$ lein -v
+Leiningen 2.8.1 on Java 1.8.0_162 OpenJDK 64-Bit Server VM
+#+END_SRC
+
+Note that your output may differ. So long as you get a Leiningen version number, you have it installed.
+
+*** Create a Leiningen project
+
+Leiningen is a multi-faceted tool that helps create projects, facilitate development in a myriad of ways, and deploy applications. It uses a =project.clj= for configuration. Let's go ahead and create our root directory, with a =project.clj= file in it.
+
+#+BEGIN_SRC bash
+mkdir workout_tracker
+cd workout_tracker
+touch project.clj
+#+END_SRC
+
+Open up =workout_tracker/project.clj= in your editor. Add the following:
+
+#+BEGIN_SRC Clojure
+(defproject workout-tracker "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure       "1.9.0"]
+                 [org.clojure/clojurescript "1.10.238"]]
+  :plugins [[lein-figwheel "0.5.15"]
+            [lein-cljsbuild "1.1.7"]]
+  :clean-targets [:target-path "out"]
+  :cljsbuild {
+    :builds [{:id           "dev"
+              :source-paths ["src"]
+              :figwheel     true
+              :compiler     {:main "workout-tracker.core"}
+            }]
+  })
+#+END_SRC
+
+=project.clj= introduces quite a few new things. Let's walk through it line by line. The first thing to notice is that the entire =project.clj= looks a lot one big function call. And that's effectively what it is![fn:1] 
+
+=defproject= takes a number of arguments. The first argument is the name of the project. We do not need to put the name of the project (in our case, =workout-tracker=) inside quotation marks. =defproject='s second parameter is a string with the version number. This takes the form =major=-=minor=-=incremental=.[fn:2] But in our case, we also have =-SNAPSHOT= appended to the end. This indicates that it is a development version rather than an official release.
+
+After the project name and version number comes a series of key value pairs. This looks a lot like a ClojureScript map, and like a map it typically takes the form of a keyword and an expression. Like a map, the key-value pairs do not need to be separated by a comma. Key-value pairs are conventially separated by line breaks.
+
+**** =:dependencies=
+
+We can see that =:dependencies= is set to a vector of vectors containing the names of the dependencies. In our case we have two dependencies: =clojure= and =clojurescript=. The =clojurescript= compiler is written in =clojurescript=. Conveniently, we are able to specify which version of Clojure and ClojureScript we are going to use on a per-project basis. This is much more convenient than using something like =nvm= with node.
+
+Each individual vector in the vector of dependencies consists of the name of the library and the version. For instance, =[org.clojure/clojure "1.9.0"]=. Often the name of the library is prefixed by the group id, which in this case is =org.clojure=. When a library the group id for the library is the same, you only need the name of the library.[fn:3] You won't need to worry about what to type in the vectors. The vector will be listed on a library's README or listed in the Clojars directory.
+
+Adding a dependency is as simple as adding the vector with the dependency name and version to the =:dependencies= vector and starting Leiningen.
+
+**** =:plugins=
+
+Leiningen has the ability to use plugins. Plugins are typically used to add tasks that make development easier. Libraries that are used in your codebase go in =:dependencies=, not =:plugins=.
+
+We have added two plugins. Figwheel will build our ClojureScript code, take care of reloading it into the browser, and give a REPL that executes within the browser environment. We'll see how this works right after we finish looking at the =project.clj= file.
+
+The second plugin is =lein-cljsbuild=. It is used to compile ClojureScript to JavaScript.
+
+**** =:clean-targets=
+
+Remember how we had to manually =rm= the =hello_world/out= directory? Listing =out= in the =:clean-targets= vector tells Leinengen to take care of that for us. Leinengen offers a task that deletes these unneeded directories. You can run it with =lein clean=.
+
+**** =:cljsbuild=
+
+=:cljsbuild= is set to a vector of maps. Each map contains a set of options for compiling to ClojureScript. We have only one map for a development build. The =:id= property allows us to give a name to the build. In our case, we set =:id= to "dev". This means we can compile our ClojureScript project with the command =lein cljsbuild once dev=. We'll explore the build commands in a bit.
+
+The =:source-paths= option is a vector that contains the path to the top level of our ClojureScript code. If our =core.cljs= file were in the directory =workout_tracker/src/cljs/core=, then =:source-paths= would be set to =["src/cljs"]=. If we had multiple top-level directories, they go in the =:source-paths= vector as well. This often happens if you are sharing code between Clojure and ClojureScript.
+
+The =:fighweel true= tells Figwheel to insert the code it needs for its functionality into the build. Bruce Hauman, the creator of Fighwheel, has made this very simple for us.
+
+Finally, the =:compiler= option take map with a key =:main= and a string with the namespace for the entry point of our ClojureScript application.
+
+For further information on the =:cljsbuild= options, see the [[https://github.com/emezeske/lein-cljsbuild][lein-cljsbuild readme]].
+
+*** Hello World with Fighwheel
+
+**** Directory Structure
+
+Now that we understand our =project.clj= file, let's set up the minimal directory structure. We want the following directory structure.
+
+#+BEGIN_SRC 
+workout_tracker/
+  | - project.clj
+  | - src/
+       | - workout_tracker/
+             | - core.cljs
+#+END_SRC
+
+To add =src/=, =src/workout_tracker=, and =src/workout_tracker/core.cljs= on Linux or Mac, =cd= into your =workout_tracker= directory, and run these commands: 
+
+#+BEGIN_SRC 
+mkdir -p src/workout_tracker
+touch src/workout_tracker/core.cljs
+#+END_SRC
+
+Let's add a call to console.log, just so we can see if things are wired up correctly. Inside =core.cljs=, run the following:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(.log js/console "Hello from workout_tracker.core")
+#+END_SRC
+
+We recall from using Lumo to compile ClojureScript that we need to include the compiled target into a page. Let's go ahead and create =index.html=. Make sure your working directory in the terminal is =workout_tracker=, and run:
+
+#+BEGIN_SRC bash
+touch index.html
+#+END_SRC
+
+Open =index.html in your editor and paste in the following:
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ClojureScript Tutorial | Hello Figwheel!</title>
+    </head>
+    <body>
+    <script src="main.js"></script>
+    </body>
+</html>
+#+END_SRC
+
+Notice that we did not set the name for the JavaScript file that we are compiling. It will default to =main.js=.
+
+Now, run fighweel. At the terminal, run =lein fighweel=. Then open =index.html= in a browser. You won't see anything on the page, but if you check the console, you should see "Hello from workout_tracker.core". (If it didn't work, make sure you were in the =workout_tracker= directory when you ran =lein figwheel=.
+
+Now look at your terminal where you ran the =lein fighwheel= command. There's a REPL! It's been far too long without one, so let's experiment with it just a little bit.
+
+At the REPL, type =(js/alert "Hello from the REPL)=. Go back to your browser: you should see the message displayed in an alert box!
+
+Because we can execute ClojureScript in the browser, we can get immediate feedback on our code. We have easy access to our entire codebase. We can enter namespaces, call any function there, and immediately see the result. Let's experiment a little to get a feel for how this works.
+
+Open up =workout_tracker/core.cljs= and change it to the following:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(.log js/console "Hello from Fighweel?!")
+(defn greet [name]                     ;; <- This is new
+  (js/alert (str "Greetings " name)))
+#+END_SRC
+
+Save the file. Remember that we use =str= to concatenate strings. The =greet= function takes a name and pops up an alert in the browser.
+
+Let's see if we can call the =greet= function from the REPL. First, we need to switch to the namespace in our =workout_tracker/core.cljs= file. Looking at the top, we see =(ns workout-tracker.core)=. This means that the namespace is =workout-tracker.core=.
+
+If we look at our REPL in the terminal, we see that, prior to the prompt, it says =dev:cljs.user=. The part after the colon tells us which namespace we are in. =in-ns= is a function that lets us easily switch to a namespace. Once we are in the namespace, we can easily call the functions in that namespace.
+
+To switch to =workout-tracker.core=, use =in-ns=:
+
+#+BEGIN_SRC
+dev:cljs.user=> (in-ns 'workout-tracker.core)
+
+dev:workout-tracker.core=> 
+#+END_SRC
+
+Looks like our namespace changed from =cljs.user= to =workout-tracker.core=. Let's try the =greet= function.
+
+#+BEGIN_SRC 
+dev:workout-tracker.core=> (greet "Soren")  
+#+END_SRC
+
+In your browser, you should see the alert box pop up. But what if we change our code? Do we need to restart the REPL, or reload the page in our browser? Let's change the greeting in =greet= and see if it just works. Close the alert box in your browser. In =workout_tracker/core.cljs=, change the greeting line from ="Greetings "= to ="Hello "=:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(.log js/console "Hello from Fighweel?!")
+(defn greet [name]
+  (js/alert (str "Hello " name)))  ;; "Greeting " changed to "Hello "
+#+END_SRC
+
+Now go back to your REPL and run =(greet "Erin")=. You should see "Hello Erin" rather than "Greetings Erin". We're starting to see why Fighweel provides the state of the art in interactive front end development. Let's see how this plays out by building a toy application: a workout tracker.
+
+*** Workout Tracker
+
+Let's build a workout tracker. We haven't learned anything yet about ClojureScript on the server side, so we won't be able to actually save our workouts anywhere. That's a pretty unique feature, so we can name our application Lethe, after the Greek spirit of forgetfulness.
+
+So far, we haven't built anything that looks great. Let's pull in a CSS framework. We'll choose Bulma because it's pure CSS, and we don't have to worry about making our ClojureScript co-habitate with jQuery.
+
+First, change your =workout_tracker/index.html= as follows:
+
+#+BEGIN_SRC html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Lethe | An Amnesiac Workout Logger</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.css" rel="stylesheet" />
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="/">
+                    <img src="https://raw.githubusercontent.com/cljs/logo/master/cljs-white.png" alt="ClojureScript Tutorial" height="3rem">
+                </a>
+                <a class="navbar-item title is-4" href="#">
+                    Lethe
+                </a>
+            </div>
+
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="field is-grouped">
+                            <p class="control">
+                                <a class="bd-tw-button button open-modal"
+                                   href="#">
+                                    <span class="icon">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span>
+                                        Create Log
+                                    </span>
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+        </nav>
+
+        <!-- Hero  -->
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container">
+                    <h1 class="title">
+                        Your workouts
+                    </h1>
+                    <h2 class="subtitle">
+                        An amnesiac workout logger written in ClojureScript
+                    </h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main  -->
+        <section class="section">
+            <div class="container">
+                <nav class="panel">
+                    <p class="panel-heading">
+                        workout logs
+                    </p>
+                    <p class="panel-tabs">
+                        <a class="is-active">all</a>
+                        <a>today</a>
+                        <a>yesterday</a>
+                        <a>last week</a>
+                        <a>last month</a>
+                    </p>
+                    <div class="panel-block reset-button">
+                        <button class="button is-link is-outlined is-fullwidth">
+                        reset all filters
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </section>
+
+        <script src="main.js"></script>
+    </body>
+</html>
+#+END_SRC
+
+You may take a few minutes to read through the documentation in Bulma, particularly for the =navbar= and the =panel= classes. Notice that we reference a =styles.css= file. We need to create that. =touch styles.css= in the same directory as =index.html=, and add the following:
+
+#+BEGIN_SRC css
+.navbar-brand img {
+    max-height: 3rem;
+}
+.navbar-brand a {
+    color: #5ab515;
+    transition: color 1s;
+}
+.navbar-brand a:hover {
+    color: #47821a
+}
+.main-content {
+    min-height: 80vh
+}
+.hidden {
+    display: none;
+}
+#+END_SRC
+
+Now reload =index.html= in your browser. The =html= we've written has given us a good start on the application. We will be using ClojureScript a bit like we might use jQuery to manipulate the DOM. (This kind of approach is not how ClojureScript is usually used, and we turn to a more conventional React-based approach in a later chapter.)
+
+The user's first impulse when faced with this page will likely be click the "Create Log" button. But, if you try that, nothing happens. Let's add some interactivity. A modal that pops up with a form into which we could enter information would be useful. 
+
+Bulma has a =.modal= class which can be toggled by adding or removing the =is-active= class. Let's add the modal to our page, then use ClojureScript to toggle it.
+
+Add the following to your =index.html= above the =script= tag at the end of the body:
+
+#+BEGIN_SRC html
+<!-- Modal -->
+<div class="container">
+    <div class="modal">
+        <div class="modal-background"></div>
+            <div class="modal-content">
+                <div class="box">
+                    <div class="field">
+                        <label class="label">Your Workout</label>
+                        <div class="control">
+                            <input class="input" type="text" placeholder="Log your workout">
+                        </div>
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-link submit">Submit</button>
+                            </div>
+                            <div class="control">
+                                <button class="button is-text cancel">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <button class="modal-close is-large" aria-label="close"></button>
+        </div>
+    </div>
+</div>
+#+END_SRC
+
+If you refresh the page, you won't see anything. Until =div.modal= as the class =.is-active= added to it, it remains invisible. Let's add an event listener on the "Create Log" button to add the =.is-active= class.
+
+We will need to use JavaScript interop for this. But it seems cumbersome to keep calling methods on =document=. Let's create a helper function that returns an element by its selector. 
+
+In =src/workout_tracker/core.cljs=, add the following function:
+
+#+BEGIN_SRC ClojureScript
+(defn by-selector [selector]
+  "Returns a single element that matches `selector`."
+  (.querySelector js/document selector))
+#+END_SRC
+
+Let's test it out at the REPL. (If you closed it, you can restart it with =lien figwheel=.)
+
+#+BEGIN_SRC 
+dev:workout-tracker.core=> (def title-text (by-selector ".navbar-brand a.title"))
+#'workout-tracker.core/title-text
+dev:workout-tracker.core=> (.-textContent title-text)
+"\n                    Lethe\n                "
+#+END_SRC
+
+Looks like it works! Keeping our JavaScript interop in a helper function really improves the ergonomics of working with the DOM. We're going to need to do a few other things too, like adding a class. Let's go ahead and create helper function to add and remove classes. Add the following function to your =workout_tracker/core.cljs=:
+
+#+BEGIN_SRC ClojureScript
+(defn toggle-class! [element class]
+  "Adds a `class` to `element` if it doesn't have it; else removes it."
+  (.toggle (.-classList element) class))
+#+END_SRC
+
+Now we could begin to set event handlers to fire this function, but we don't know for sure if it works yet. With the benefit of Figwheel we can test this immediately in the browser.
+
+Go to your REPL in your terminal, and type the following commands:
+
+#+BEGIN_SRC ClojureScript
+dev:workout-tracker.core=> (def modal (by-selector ".modal"))
+#'workout-tracker.core/modal
+dev:workout-tracker.core=> (toggle-class! modal "is-active")
+true
+#+END_SRC
+
+Now go to your browser. You should see the modal. Toggle the class on and off again. We know that =toggle-class!= works, and we were able to verify this immediately thanks to Figwheel.
+
+Now we need to set event handlers so that the users can open and close the modal. Again, let's wrap JavaScript interop in a ClojureScript function.
+
+In your =workout_tracker/core.cljs=, add a definition for a =listen!= function:
+
+#+BEGIN_SRC 
+(defn listen! [element event-type listener]
+  "Adds a `listener` for the `event-type` on `element`.
+   `event-type` should be a keyword."
+  (.addEventListener element (name event-type) listener))
+#+END_SRC
+
+Note the docstring: we expect the event type to be a keywork rather than a string. =name= converts the keyword back into the string. =listener= is a function that is applied to the type of event specified by =event-type= (for instance, =:click=). The =listener= function takes a JavaScript event.
+
+We want several different elements on the page to be able to toggle the modal. Let's create a =toggle-modal= function that we can pass to =listen!= as a handler.
+
+#+BEGIN_SRC  ClojureScript
+(defn toggle-modal []
+  "Toggles the modal."
+  (let [modal (by-selector ".modal")]
+    (toggle-class! modal "is-active")))
+#+END_SRC
+
+Your =workout_tracker/core.cljs= should now look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(.log js/console "Hello from Fighweel?!")
+(defn greet [name]
+  (js/alert (str "Hello " name)))
+
+(defn by-selector [selector]
+  "Returns a single element that matches `selector`."
+  (.querySelector js/document selector))
+
+(defn toggle-class! [element class]
+  "Adds a `class` to `element` if it doesn't have it; else removes it."
+  (.toggle (.-classList element) class))
+
+(defn listen! [element event-type listener]
+  "Call `listener` on event of `event-type` on `element`.
+   `event-type` should be a keyword."
+  (.addEventListener element (name event-type) listener))
+
+(defn toggle-modal []
+  (let [modal (by-selector ".modal")]
+    (toggle-class! modal "is-active")))
+#+END_SRC
+
+Open up your REPL and toggle the modal a few times with =toggle-modal= just to make sure it works.
+
+Now we need to figure out which elements should toggle the modal. We can select the top right "Create Log" button with =".open-modal"\=. We also want the cancel button to close the modal. We can select it with =".modal-content button.cancel"\=. Finally, we want that close button in the top right of the modal to close the modal. It has the class =.modal-close=.
+
+We notice right away that we don't just have a single element for which we need to attach a listener. We have a list. It would be convenient to have a =listen-all!= function that takes a list and applies the listener to all the elements in the list. How would we go about this?
+
+You might recall that we use =map= to apply a function to each item in a list. However, =map= is more a function to transform one sort of list into another, not so much a function called for side effects. Not only does it feel a little wrong to use map for this, it won't actually work. Map returns a lazy sequences, which means that it does not apply the function to the items in the list immediately. We don't need to worry about why this is; the point is that =map= isn't a good fit for our purposes.
+
+=doseq= is what we're looking for. Let's check its docstring:
+
+#+BEGIN_SRC ClojureScript
+dev:workout-tracker.core=> (cljs.repl/doc doseq)
+-------------------------
+cljs.core/doseq
+([seq-exprs & body])
+Macro
+  Repeatedly executes body (presumably for side-effects) with
+  bindings and filtering as provided by "for".  Does not retain
+  the head of the sequence. Returns nil.
+nil
+dev:workout-tracker.core=> 
+#+END_SRC
+
+Note that we could not use =doc= directly. Because we switched namespaces, we have to use the fully qualified name =cljs.repl/doc=. That docstring may not be particularly illuminating. The docstring for =for= that is referenced in =doseq='s docstring is also not easy for a beginner to follow. It might seem that =for= is what we need, since iterating over a list to execute side effects would typically be done using a for loop in other languages. However, =for= is not a for loop, it is a list comprehension. ClojureScript doesn't have for loops.
+
+
+ If we go the [[http://cljs.info][ClojureScript cheat sheet]], you will see =doseq= listed. If you click on it, it will take you to [[https://clojuredocs.org/clojure.core/doseq][the ClojureDocs.org entry for doseq]]. There are some helpful examples that show how =doseq= works.
+
+Thus far we have been able to avoid discussion the similarities and differences between Clojure and ClojureScript. We've focused exclusively on ClojureScript. However, following the process we discussed in the first chapter for finding functions and determining how to use them leads us to the ClojureDocs.com site. 
+
+Since ClojureDocs is a site for Clojure, you might wonder if the examples listed will work. For the most part, ClojureScript is very close to Clojure. If a function is listed on the [[http://cljs.info][ClojureScript cheat sheet]], you can use the entry for it on the [[http://clojuredocs.org][ClojureDocs]] site. If you want to be certain, test one of the examples at a ClojureScript REPL.
+
+Let's do that with =doseq=. At the REPL, run the following:
+
+#+BEGIN_SRC ClojureScript
+dev:workout-tracker.core=> (doseq [num [1 2 3 4]] (println (str "I am " num "\n")))
+I am 1
+I am 2
+I am 3
+I am 4
+nil
+#+END_SRC
+
+=doseq= takes a vector of pairs, much like =let=, and binds them in the body. =doseq= is capable of a lot more, which is why the documentation and some of the examples look difficult the first time one encounters them. Let's put =do-seq= to use in creating a =listen-all!= function. In your =workout_tracker/core.cljs=, add the following declaration:
+
+#+BEGIN_SRC 
+(defn listen-all! [elements event-type listener]
+  "Adds a `listener` for the `event-type` on each `element`.
+   `event-type` should be a keyword."
+  (doseq [element elements] (listen! element event-type listener)))
+#+END_SRC
+
+After making these changes, your =workout_tracker/core.cljs= should look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(.log js/console "Hello from Fighweel?!")
+(defn greet [name]
+  (js/alert (str "Hello " name)))
+
+(defn by-selector [selector]
+  "Returns a single element that matches `selector`."
+  (.querySelector js/document selector))
+
+(defn toggle-class! [element class]
+  "Adds a `class` to `element` if it doesn't have it; else removes it."
+  (.toggle (.-classList element) class))
+
+(defn listen! [element event-type listener]
+  "Adds a `listener` for the `event-type` on `element`.
+   `event-type` should be a keyword."
+  (.addEventListener element (name event-type) listener))
+
+(defn toggle-modal []
+  (let [modal (by-selector ".modal")]
+    (toggle-class! modal "is-active")))
+
+(defn listen-all! [elements event-type listener]
+  "Adds a `listener` for the `event-type` on each `element`.
+   `event-type` should be a keyword."
+  (doseq [element elements] (listen! element event-type listener)))
+#+END_SRC
+
+Let's test this in the REPL. First, we set the =create-button= var to the "Create Log" button element, then we attach the event listener.
+
+#+BEGIN_SRC 
+dev:workout-tracker.core=> (def create-button (by-selector ".open-modal"))
+#'workout-tracker.core/create-button
+dev:workout-tracker.core=> (listen-all! [create-button] :click toggle-modal)
+nil
+#+END_SRC
+
+Navigate to your browser and click the "Create Log" button. It opens the modal! We know that =listen-all!= works with =toggle-modal=. Now we just need to assemble all the elements that should toggle the modal.
+
+#+BEGIN_SRC 
+(def modal-togglers
+  [(by-selector ".open-modal")
+   (by-selector ".modal-content button.cancel")
+   (by-selector ".modal-close")])
+
+(listen-all! modal-togglers :click toggle-modal)
+#+END_SRC
+
+=modal-togglers= is a vector of all the elements that should be able to open or close the modal. The call to =listen-all= causes an event listener to be added to each of the elements in =modal-togglers=. Now when the user clicks any of these elements, the modal will open or close.
+
+*** ClojureScript Namespaces
+
+Our users cannot log their workouts yet. But before we allow them to do so, we should think about how our we have organized our ClojureScript code. =workout_tracker/core.cljs= includes both general purpose functions to interact with the DOM and functionality specific to our application. It makes sense to split these out.
+
+Create the file =workout_tracker/utils/dom.cljs=. From within the =workout_tracker= director, run:
+
+#+BEGIN_SRC bash
+mkdir utils
+touch utils/dom.cljs
+#+END_SRC
+
+Open =workout_tracker/utils/dom.cljs= in your editor. First, we need to add the namespace. Add to the top of the file:
+
+#+BEGIN_SRC 
+(ns workout-tracker.utils.dom)
+#+END_SRC
+
+Note that the namespace declaration follows the file path, except that underscores are replaced by dashes. Everything declared in this file will be within the namespace =workout-tracker.utils.dom=. This means we can import it into our =workout-tracker.core= namespace.
+
+Below the namespace declaration, paste in the dom-specific functions =by-selector=, =toggle-class!=, =listen!=, and =listen-all!=. Remove these functions from the =core.cljs= file. While we're cleaning up, we can also move the =greet= function and the call to =console.log=. Our =workout_tracker/utils/dom.cljs= file should now look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.utils.dom)
+
+(defn by-selector [selector]
+  "Returns a single element that matches `selector`."
+  (.querySelector js/document selector))
+
+(defn toggle-class! [element class]
+  "Adds a `class` to `element` if it doesn't have it; else removes it."
+  (.toggle (.-classList element) class))
+
+(defn listen! [element event-type listener]
+  "Adds a `listener` for the `event-type` on `element`.
+   `event-type` should be a keyword."
+  (.addEventListener element (name event-type) listener))
+
+(defn listen-all! [elements event-type listener]
+  "Adds a `listener` for the `event-type` on each `element`.
+   `event-type` should be a keyword."
+  (doseq [element elements] (listen! element event-type listener)))
+#+END_SRC
+
+Our =workout_tracker/core.cljs= file should now look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core)
+
+(defn toggle-modal []
+  (let [modal (by-selector ".modal")]
+    (toggle-class! modal "is-active")))
+
+(def modal-togglers
+  [(by-selector ".open-modal")
+   (by-selector ".modal-content button.cancel")
+   (by-selector ".modal-close")])
+
+(listen-all! modal-togglers :click toggle-modal)
+#+END_SRC
+
+However, we need to import our dom functions into =core.cljs=. We do that by using =:require= in the namespace declaration. Change the top two lines of =workout_tracker/core.cljs= to the following:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core
+  (:require [workout-tracker.utils.dom :as dom]))
+#+END_SRC
+
+This makes the =workout-tracker.utils.dom= namespace available in the =workout-tracker.core= namespace, and the =:as dom= bit also allows us to refer to it as simply =dom=. But this means we need to prepend =dom/= in front of all the functions we use from the =workout-tracker.utils.dom= namespace. Go ahead and do that. When you are done, your =workout-tracker.core= namespace should look like this:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core
+  (:require [workout-tracker.utils.dom :as dom]))
+
+(defn toggle-modal []
+  (let [modal (dom/by-selector ".modal")]
+    (dom/toggle-class! modal "is-active")))
+
+(def modal-togglers
+  [(dom/by-selector ".open-modal")
+   (dom/by-selector ".modal-content button.cancel")
+   (dom/by-selector ".modal-close")])
+
+(dom/listen-all! modal-togglers :click toggle-modal)
+#+END_SRC
+
+That feels a lot better.
+
+*** Displaying Logged Workouts
+
+Our users want to be able to log a workout. They are able to pull up the form where they type in the workout, but they nothing happens when they click submit. In this section we build the functionality to take the user's input and display it on the page. We also learn about a nicer way to build HTML.
+
+Bulma's [[https://bulma.io/documentation/components/panel/][documentation for the panel component]] illustrates what the panel looks like when it has items in it. Take a quick look.
+
+What we want to do is add a node to the DOM that looks something like this
+
+#+BEGIN_SRC html
+<nav class="panel">
+    <p class="panel-heading">
+        workout logs
+    </p>
+    <p class="panel-tabs">
+        <a class="is-active">all</a>
+        <a>today</a>
+        <a>yesterday</a>
+        <a>last week</a>
+        <a>last month</a>
+    </p>
+    <!-- This is something like what we want to add -->
+    <a class="panel-block">
+      <span class="panel-icon">
+        <i class="fas fa-book" aria-hidden="true"></i>
+      </span>
+      marksheet
+    </a>
+    <!-- last of the additional content -->
+    <div class="panel-block reset-button">
+        <button class="button is-link is-outlined is-fullwidth">
+        reset all filters
+        </button>
+    </div>
+</nav>
+#+END_SRC
+
+One way to add the =a.panel-block= element and its children would be to add a =template= tag and clone its content. However, writing HTML is neither concise nor convenient. It is easy to get a tag out of place, especially when elements are deeply nested.
+
+*** Note on finding ClojureScript Libraries
+
+A number of ClojureScript libraries use a templating style derived from the Clojure library =Hiccup=.  This is an issue that comes up when we look for a good Hiccups-style templating library. We'll get to that in a moment, but let's take a quick detour into the rules of thumb for finding libraries.
+
+The biggest difficulty in selecting a library often is determining whether the library is maintained. Many ClojureScript libraries are quite focused and stable, and will not have a commit for years because none are necessary. Because the ClojureScript population is smaller than its JavaScript counterpart, the number of stars on a Github repository will also be much lower. Don't be scared away by a library with a few hundred stars.
+
+The first place to check would be the [[https://clojurescript.org/community/libraries][ClojureScript documentation for libraries]]. [[https://github.com/chaconnewu/awesome-augmented/blob/master/awesomes/awesome-clojurescript.md][Awesome ClojureScript (augmented)]] has a nice categorized list, and displays the number of stars next to the libraries. [[https://www.clojure-toolbox.com/][Clojure Toolbox]] displays libraries by category, but it makes no guarantee of quality, and declines to remove sub-par libraries. You will find, for instance, libraries with broken or missing documentation and abandoned personal projects. [[https://crossclj.info/cljs][Cross Clj's cljs page]] shows which ClojureScript libraries are most heavily depended upon. 
+
+Additionally, there are recognizable maintainers whose projects you can rely on. [[https://funcool.github.io/][Funcool]] is a great example.
+
+You will notice that ClojureScript libraries often have very low version numbers, often 0.x. This doesn't mean that the library is not ready for production. Low version numbers are common in the ClojureScript world, and unless there is a notice in a library's README saying otherwise, you're probably fine to use it in your project.
+
+If we follow this method, we find that there are a few options, but most have a dependency on React. We'll get to React in a later chapter; for now we just want to be able to create plain html elements. [[https://github.com/jeluard/hipo/][Hipo]] looks like it should work.
+
+To install a library, we add it to our =project.clj= file. Add =[hipo "0.5.2"]= to the =:dependencies= vector in =project.clj=. When you are done, =project.clj= should look like this:
+
+#+BEGIN_SRC 
+(defproject workout-tracker "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure       "1.9.0"]
+                 [org.clojure/clojurescript "1.10.238"]
+                 [hipo                      "0.5.2"]]
+  :plugins [[lein-figwheel "0.5.15"]]
+  :clean-targets [:target-path "out"]
+  :cljsbuild {
+               :builds [{:id           "dev"
+                         :source-paths ["src"]
+                         :figwheel     true
+                         :compiler     {:main "workout-tracker.core"}
+                         }]
+  })
+#+END_SRC
+
+Let's check out =hipo= at the REPL. Require =hipo= at the REPL:
+
+#+BEGIN_SRC ClojureScript
+(require '[hipo.core :as hipo])
+#+END_SRC
+
+Just to see if this works, let's add a span element to the title of our page. We'd like the title text in the top left to read "Lethe: A Workout Tracker".
+
+First, we need to create a =span= element:
+
+#+BEGIN_SRC ClojureScript
+(def span-el (hipo/create [:span ": A Workout Tracker "]))
+#+END_SRC
+
+Then we add it to the using JavaScript interop:
+
+#+BEGIN_SRC ClojureScript
+(def title (dom/by-selector "a.title"))
+(.appendChild title span-el)
+#+END_SRC
+
+Now pull up our browser. You should see the title link in the top left saying: "Lethe: A Workout Tracker".
+
+*** The Hiccup Style
+
+The easiest way to figure out the Hiccup syntax is by comparison
+
+| Hiccup                                                   | HTML                                                   |
+|----------------------------------------------------------+--------------------------------------------------------|
+| ~[:span "Some text"]~                                    | ~<span>"Some text"</span>~                             |
+| ~[:span.a-class "Some text"]~                            | ~<span class="a-class">Some text</span>~               |
+| ~[:span#an-id "Some text"]~                              | ~<span id="an-id">Some text</span>~                    |
+| ~[:span {:id "an-id"} "Some text"]~                      | ~<span id="an-id">Some text</span>~                    |
+| ~[:a {:href "http://cljs.info" :id "cheat-sheet"} Help]~ | ~<a href="http://cljs.info" id="cheet-sheet">Help</a>~ |
+
+Divs can be nested:
+
+#+BEGIN_SRC ClojureScript
+[:div.container#outermost-div
+  [:div.row#innter-div
+    [:p.message {data-order "first"} "Welcome"]]]
+#+END_SRC
+
+The syntax above results in the following HTML:
+
+#+BEGIN_SRC HTML
+<div class="container" id="outermost-div">
+  <div class="row" id="inner-div">
+    <p class="message" data-order="first">
+      Welcome
+    </p>
+  </div>
+</div>
+#+END_SRC
+
+The immediate benefit you notice is that you are much less likely to be searching for a closing div.
+
+*** Constructing the workout entry
+
+Let's construct the workout entry. The output we want looks something like this:
+
+#+BEGIN_SRC html
+<a class="panel-block" data-created-at="1526835546917">
+  <span class="panel-icon">
+    <i class="fas fa-book" aria-hidden="true"></i>
+  </span>
+  marksheet
+</a>
+#+END_SRC
+
+Note that we have a ~data-created-at~ attribute in Unix time.
+
+In =workout_tracker/core.cljs=, we need to require ~hipo~. Alter the namespace declaration as follows:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.core
+  (:require [workout-tracker.utils.dom :as dom]
+            [hipo.core :as hipo])) ;; This is new
+#+END_SRC
+
+Now let's declare a function that creates one of the ~a.panel-block~ elements. In =workout_tracker/core.cljs=:
+
+#+BEGIN_SRC ClojureScript
+(defn panel-block [text]
+  "Returns a panel block representing a workout."
+  (hipo/create
+   [:a.panel-block {:data-created-at (.now js/Date)}
+    [:span.panel-icon
+     [:i.fas.fa-book {:aria-hidden "true"}]]
+    text]))
+#+END_SRC
+
+Let's test this at the REPL to see if it works.
+
+#+BEGIN_SRC ClojureScript
+dev:workout-tracker.core=> (def panel (dom/by-selector "nav.panel"))
+#'workout-tracker.core/panel
+dev:workout-tracker.core=> (def entry (panel-block "3 mile jog"))
+#'workout-tracker.core/entry
+dev:workout-tracker.core=> (def reset-btn-div (dom/by-selector "div.reset-button"))
+#'workout-tracker.core/reset-btn-div
+dev:workout-tracker.core=> (.insertBefore panel entry reset-btn-div)
+#object[HTMLAnchorElement ]
+#+END_SRC
+
+Open up your browser, and you should see the entry. Let's review what we did. We used the ~dom/by-selector~ function to select the panel, which is the parent of both the entries and the "reset all filters" button at the bottom. We created an entry element using ~panel-block~. Then we called the ~insertBefore~ method on the ~nav.panel~ parent div, and passed it the ~entry~ we wanted to add, and the element in front of which we wanted to add ~entry~.
+
+Now that we have the logic, we just need to set an event when the user opens the modal, fills the form, and clicks submit.
+
+In your =workout-tracker.core=, add the ~submit-workout-handler~ function and attach it to the submit button in the modal:
+
+#+BEGIN_SRC ClojureScript
+(defn submit-workout-handler [evt]
+  "Adds the user's workout to the page when they click submit."
+  (let [input-el      (dom/by-selector ".modal-content input")
+        workout-entry (.-value input-el)
+        panel         (dom/by-selector "nav.panel")
+        entry         (panel-block workout-entry)
+        reset-btn-div (dom/by-selector "div.reset-button")]
+    (do (toggle-modal)
+        (.preventDefault evt)
+        (set! (.-value input-el) "")
+        (.insertBefore panel entry reset-btn-div))))
+#+END_SRC
+
+We use the ~let~ form to set all the variables, and we take advantage of the fact that we can reference previous variables in the ~let~ vector. For instance, ~workout-entry~ is set to the value of ~input-el~.
+
+#+BEGIN_SRC ClojureScript
+(dom/listen! (dom/by-selector ".modal-content button.submit")
+             :click
+             submit-workout-handler)
+#+END_SRC
+
+When ~submit-workout-handler~ runs, it toggles the modal off. We want to reset the value of the input element to a blank string so that when our users open up the modal again, it is blank. Finally, we insert the new entry just above the "reset all filters" button at the bottom of our panel.
+
+*** Filtering the tasks by date
+
+Our users will expect to be able filter their workouts by date. Our last task in this chapter will be to enable that functionality.
+
+First, we will need to write some general utility functions. It would be useful to have a predicate that we can pass to ~filter~ to determine how long ago a workout was logged. These general utility functions deserve their own namespace. Create the file =workout_tracker/utils/date.cljs=.
+
+We need to add the namespace and the helper functions. In your new =date.cljs= file, add the following:
+
+#+BEGIN_SRC ClojureScript
+(ns workout-tracker.utils.date)
+
+(def timespans
+  "A map with associating timespans to milliseconds"
+  (let [day   86400000
+        week  (* day 7)
+        month (* day 30)]
+    {:day day, :week week, :month month}))
+
+(defn date-filter [when-range unix-timestamp]
+  "Test whether a `unix-timestamp` is within `when-range`.
+   `when-range` is a keyword, such as :today, :yesterday,
+   :last-week, or :last-month"
+  (let [now        (.now js/Date)
+        difference (- now unix-timestamp)]
+    (case when-range
+      :today      (< difference (:day timespans))
+      :yesterday  (and (> difference (:day timespans))
+                       (< difference (* 2 (:day timespans))))
+      :last-week  (< difference (:week timespans))
+      :last-month (< difference (:month timespans)))))
+#+END_SRC
+
+~timespans~ is simply a map that gives us the number of milliseconds in a day, a week, and a month. Recall that we store the date that an entry was created in Unix time, which is the number of milliseconds since January 1, 1970 (UTC). Note that we are assuming that a month is 30 days.
+
+~date-filter~ is a predicate (i.e., a function that takes a single argument and returns a boolean. It expects the keyword :today, :yesterday, :last-week, or :last-month, which specify what time period we are interested in. It also takes an integer representing Unix time.
+
+The call to ~case~ is new. ~case~ is very similar to a switch statement. In ~date-filter~, we use the ~when-range~ keyword to determine what comparison we should perform.
+
+Let's take a look at the tabs at the top of our panel:
+
+#+BEGIN_SRC html
+<p class="panel-tabs">
+    <a class="is-active">all</a>
+    <a>today</a>
+    <a>yesterday</a>
+    <a>last week</a>
+    <a>last month</a>
+</p>
+#+END_SRC
+
+Let's add an attribute on the tabs so that we can access it in our event handler:
+
+#+BEGIN_SRC html
+<p class="panel-tabs">
+    <a class="is-active" data-timeframe="all">all</a>
+    <a data-timeframe="today">today</a>
+    <a data-timeframe="yesterday">yesterday</a>
+    <a data-timeframe="last-week">last week</a>
+    <a data-timeframe="last-month">last month</a>
+</p>
+#+END_SRC
+
+This allows us to cleanly identify the timeframe for which the user is interested in. There's something else we need. If we are going to go through the list of all the workout entries, we need a way of getting all elements that match a css selector. ~dom/by-selector~ uses ~document.querySelector~, which only grabs the first match. Let's create a ~dom/by-selector-all~ function. Open =workout_tracker/utils/dom.cljs= and add the following:
+
+#+BEGIN_SRC ClojureScript
+(defn by-selector-all [selector]
+  "Returns all elements that match `selector`."
+  (array-seq (.querySelectorAll js/document selector)))
+#+END_SRC
+
+~by-selector-all~ is straightforward, except for the call to ~array-seq~. Recall that ClojureScript and JavaScript use different data structures, and that the ~querySelectorAll~ method returns a ~NodeList~. We convert it into a ClojureScript data structure to be able to work with it more easily.
+
+Let's create the event handler. In =workout_tracker/core.clj=, add:
+
+#+BEGIN_SRC ClojureScript
+(defn in-timeframe [timespan date-attr element]
+  "Determine if `element` is within timeframe.
+   Wraps date-filter. `timespan` is the keyword passed to date-filter.
+   `date-attr` specifies the attribute containing the Unix timestamp
+   on the element to use."
+  (let [el-timestamp (js/parseInt (.getAttribute element date-attr))]
+    (date/date-filter timespan el-timestamp)))
+
+(defn handle-date-filter [evt]
+  (let [tab-el        (.-currentTarget evt)
+        when-kw       (keyword (.getAttribute tab-el "data-timeframe"))
+        workout-els   (dom/by-selector-all "a.panel-block")
+        filter-helper (fn [el] (in-timeframe when-kw "data-created-at" el))]
+    (do (.preventDefault evt)
+        (dom/apply-filter filter-helper workout-els))))
+
+(dom/listen-all! (dom/by-selector-all ".panel-tabs a")
+                 :click
+                 handle-date-filter)
+#+END_SRC
+
+We start with a helper function, ~in-timeframe~ that takes an element and invokes ~date/date-filter~ to determine whether it is in a given time range. Note that an element attribute's value is converted to a number with ~js/parseInt~. 
+
+In our ~handle-date-filter~ function, much of the work is done in our ~let~ vector. First, we set ~tab-el~ equal to the DOM element on which we set the event listener. This will be one of the tabs across the top of our panel that are implement as ~a~ elements. Each of these ~a~ elements has a ~data-timeframe~ attribute, whose value is the date range we are interested in (e.g., "today", "last-week"). We turn this value into a keyword, since that is what ~date-filter~ will use in its ~case~ statement.
+
+We use our new ~dom/by-selector-all~ function to select all the workout entries in the panel. Finally, we set ~filter-helper~ to a function that takes an element and invokes the ~in-timeframe~ helper function. The body of the function simply calls ~dom/apply-filter~ with the predicate ~filter-helper~ and the vector of workout elements.
+
+Let's think for a moment about how we will actually filter out the workouts that are outside the time frame that our users are interested in. We can't simply use ~filter~ to filter a list; we must interact with the DOM. And we do not want to simply remove DOM nodes when we filter them out; otherwise they are gone for good. We want to hide them.
+
+The ability to hide DOM elements that do not pass a predicate test seems like something that should be reusable. Therefore, we implement the function in the ~workout_tracker.dom~ namespace. We want to iterate through elements in an array, apply a predicate to them, and either hide them if the predicate returns false, or unhide them if the predicate returns true.
+
+Let's start by adding two helper functions to =workout_tracker/utils/dom.cljs=:
+
+#+BEGIN_SRC ClojureScript
+(defn hide-element [element]
+  (.add (.-classList element) "hidden"))
+(defn unhide-element [element]
+  (.remove (.-classList element) "hidden"))
+#+END_SRC
+
+Both ~hide-element~ and ~show-element~ are self-explanatory. (Recall that we have a ~.hidden~ class in =styles.css=. We can use these in an ~apply-filter~ function, which hides elements that return false when a predicate applies, else shows them. In =workout-tracker/utils/dom.cljs=, add the following:
+
+#+BEGIN_SRC ClojureScript
+(defn apply-filter [predicate els]
+  "Hide elements in `els` that fail when `predicate` applied, else show."
+  (doseq [el els]
+    (if (predicate el)
+      (do (unhide-element el)
+      (do (hide-element el)))))
+#+END_SRC
+
+Recall that ~doseq~ takes a vector and a body, similar to a function. However, ~doseq~ iterates through the second argument (in our case ~els~), binding the first symbol in the vector (in our case ~el~) to the current item in the ~els~ sequence. This is similar to a ~for-in~ loop in JavaScript:
+
+#+BEGIN_SRC JavaScript
+let els = [1, 2, 3];
+for (let el in els) {
+   console.log(el);
+}
+#+END_SRC
+
+Try it out in the browser. If you add a workout and then click yesterday, it should be hidden. However, we have forgotten one other thing: we need to update the panel tabs to indicate which panel is active. That is simply a matter of removing the ~is-active~ class and adding it to the current tab.
+
+We need to identify the previously active tab, remove the ~is-active~ class, and add it to the tab that was clicked on. In our ~let~ vector within ~handle-date-filter~, we've set ~tab-el~ to the tab the user clicked on. We could use the same ~let~ vector to set ~previous-tab~ to panel tab that was previously active. Then, in the body, we could remove the ~is-active~ class from ~previous-tab~ and add it to ~tab-el~. Like this:
+
+#+BEGIN_SRC ClojureScript
+(defn handle-date-filter [evt]
+  "Hides or shows workout log when user clicks on panel tabs."
+  (let [tab-el        (.-currentTarget evt)
+        when-kw       (keyword (.getAttribute tab-el "data-timeframe"))
+        workout-els   (dom/by-selector-all "a.panel-block")
+        filter-helper (fn [el] (in-timeframe when-kw "data-created-at" el))
+        previous-tab  (dom/by-selector ".panel-tabs a.is-active")]
+    (do (.preventDefault evt)
+        (.remove (.-classList previous-tab) "is-active")
+        (.add (.-classList tab-el) "is-active")
+        (dom/apply-filter filter-helper workout-els))))
+#+END_SRC
+
+By now you should be, if not comfortable manipulating the DOM, at least able to do so with the help of Google. This chapter was a long one. One shortcoming of the code we created in this chapter is that we are storing our data in the DOM and constantly querying it. We were not able to take advantage of ClojureScript's data structures, and dealing with the DOM does not encourage clean code. As we will see in the next chapter, ClojureScript's power and flexibility shows most when it works with React. The DOM manipulation we employed in this chapter is fine for simple pages, but for rich front end clients, ClojureScript has much better options.
+
+** Answers to our questions
+
+   - What is the standard in ClojureScript tooling and how do I install it? *Leinengen is the de facto standard build too. Figwheel is the common tool for a browser based REPL and hot code reloading.*
+   - How do I reload my ClojureScript code into the browser as I change it? *Run Figwheel with the command ~lein do clean, fighweel~. It does the hard work for you.*
+   - How do I run a REPL in the browser? *Again, Figwheel to the rescue. If our application is set up with Fighweel, we start Fighwheel with the command ~lein do clean, fighweel~. We open the page we are working in in the browser. Then go back to the terminal from which you ran fighwheel. The REPL will be there.*
+   - How do I fire browser events from the REPL?
+   - How do I keep the state of my ClojureScript application in the browser when my code is reloaded?
+** Further Reading
+   - [[https://github.com/technomancy/leiningen/blob/stable/doc/TUTORIAL.md][Official Leiningen tutorial]]
+   - [[https://github.com/bhauman/lein-figwheel/wiki/Quick-Start][Official Figwheel tutorial]]
+   - [[https://github.com/emezeske/lein-cljsbuild][=lein-cljsbuild= Readme]].
+    
+** Homework
+
+- Implement the "reset all filters" button. When the user clicks on it, the panel tab "all" should be selected, and all workouts should be displayed.
+- Add the ability for the user to delete a workout entry.
+- Add the ability for the user to edit the text of a workout entry.
+- Add a function to =workout_tracker/utils/dom.cljs= that adds a class to an element. Refactor ~core.cljs~ to use that instead of ~.-classList~.
+
+* Footnotes
+
+[fn:3] There is a helpful [[https://github.com/technomancy/leiningen/blob/master/doc/TUTORIAL.md#artifact-ids-groups-and-versions][section]] that explains the dependency vectors in more detail in the Leiningen tutorial.
+
+[fn:2] For more details on how versioning is done, see [[https://docs.oracle.com/middleware/1212/core/MAVEN/maven_version.htm#MAVEN8855][here]].
+
+[fn:1] Technically, =defproject= is a macro. We don't need to understand the difference yet.
+

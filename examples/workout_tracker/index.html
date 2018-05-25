@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Lethe | An Amnesiac Workout Logger</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.css" rel="stylesheet" />
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.12/css/all.css" integrity="sha384-G0fIWCsCzJIMAVNQPfjH08cyYaUtMwjJwqiRKxxE/rx96Uroj1BtIQ6MLJuheaO9" crossorigin="anonymous">
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="/">
+                    <img src="https://raw.githubusercontent.com/cljs/logo/master/cljs-white.png" alt="ClojureScript Tutorial" height="3rem">
+                </a>
+                <a class="navbar-item title is-4" href="#">
+                    Lethe
+                </a>
+            </div>
+
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="field is-grouped">
+                            <p class="control">
+                                <a class="bd-tw-button button open-modal"
+                                   href="#">
+                                    <span class="icon">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </span>
+                                    <span>
+                                        Create Log
+                                    </span>
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+        </nav>
+
+        <!-- Hero  -->
+        <section class="hero">
+            <div class="hero-body">
+                <div class="container">
+                    <h1 class="title">
+                        Your workouts
+                    </h1>
+                    <h2 class="subtitle">
+                        An amnesiac workout logger written in ClojureScript
+                    </h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main  -->
+        <section class="section">
+            <div class="container">
+                <nav class="panel">
+                    <p class="panel-heading">
+                        workout logs
+                    </p>
+                    <p class="panel-tabs">
+                        <a class="is-active" data-timeframe="all">all</a>
+                        <a data-timeframe="today">today</a>
+                        <a data-timeframe="yesterday">yesterday</a>
+                        <a data-timeframe="last-week">last week</a>
+                        <a data-timeframe="last-month">last month</a>
+                    </p>
+                    <div class="panel-block reset-button">
+                        <button class="button is-link is-outlined is-fullwidth">
+                        reset all filters
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </section>
+
+        <!-- Modal -->
+        <div class="container">
+            <div class="modal">
+                <div class="modal-background"></div>
+                    <div class="modal-content">
+                        <div class="box">
+                            <div class="field">
+                                <label class="label">Your Workout</label>
+                                <div class="control">
+                                    <input class="input" type="text" placeholder="Log your workout">
+                                </div>
+                                <div class="field is-grouped">
+                                    <div class="control">
+                                        <button class="button is-link submit">Submit</button>
+                                    </div>
+                                    <div class="control">
+                                        <button class="button is-text cancel">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <button class="modal-close is-large" aria-label="close"></button>
+                    </div>
+            </div>
+        </div>
+        <script src="main.js"></script>
+    </body>
+</html>
