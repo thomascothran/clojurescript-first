@@ -1,0 +1,3 @@
+examples/**/out/
+examples/**/target/
+examples/**/figwheel_server.log
