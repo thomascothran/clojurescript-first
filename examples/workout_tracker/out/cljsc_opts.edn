@@ -1,1 +1,0 @@
-{:main "workout-tracker.core", :optimizations :none, :output-to "main.js", :output-dir "out", :source-map-timestamp true, :preloads [figwheel.connect], :external-config #:figwheel{:config {:build-id "dev", :websocket-url "ws://localhost:3449/figwheel-ws"}}}
