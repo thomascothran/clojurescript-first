@@ -1,66 +1,66 @@
 * ClojureScript First
 
-This is a tutorial on ClojureScript for JavaScript developers. Much of the existing ClojureScript documentation is aimed at Clojure developers, and much of the Clojure documentation is aimed at JavaScript developers. This tutorial does not presuppose any pre-existing knowledge of Clojure or Java. ClojureScript can stand on its own as an incredibly powerful language and ecosystem.
+This is a ClojureScript tutorial for JavaScript developers.  This tutorial does not presuppose any pre-existing knowledge of Clojure or Java. ClojureScript can stand on its own as an incredibly powerful language and ecosystem.
 
-Through this tutorial, you will learn about ClojureScript's syntax and idioms. But the larger purpose is to develop a mental map of the ClojureScript landscape: the tooling, the critical libraries, where to go for help from the community, how to solve problems idiomatically. Our purpose is not to be exhaustive. There are more complete sources to read about Clojure's syntax or the various Clojure web stacks. Our purpose is to stitch the pieces together into a whole, indicating where you can go deeper along the way.
+Through this tutorial, you will learn about ClojureScript's syntax and idioms. But the larger purpose is to develop a rough mental map of the ClojureScript landscape: the tooling, the critical libraries, where to go for help. Our purpose is not to be exhaustive. There are more complete sources to read about Clojure's syntax or the various Clojure web stacks. Our purpose is to begin with the assumption that you know nothing about ClojureScript, and get you to the point where you can begin to tackle the standard ClojureScript libraries.
+
+By the end of this tutorial, you should be able to be productive using ClojureScript to manipulate the DOM and prepared to learn Reagent or Rum from the documentation that already exists.
+
+For the motivation behind this tutorial, see [[./chapters/rationale.org][here]].
 
 ** Table of Contents
 
 1. A First Foray into ClojureScript. An introduction to ClojureScript's syntax, with plenty of exercise at the REPL.
-2. Hello World in the Browser. The basics of compiling ClojureScript, running it in the browser, and using it to manipulate the DOM. (IN PROCESS)
-3. Hello World in Node. The basics of compiling ClojureScript and using it with Node. We begin with an example of a command line tool, and proceed to create a simple server. (TODO)
-4. Functional Programming. After seeing how ClojureScript might be used on the client and the server, we take a step back and consider the principles of functional programming. We cover referential transparency, immutable data structures, and function pipelines.
-5. Upgrading our toolchain. In this chapter, we set up and explore Leiningen and Figwheel. We begin to understand why ClojureScript's tooling is state of the art.
-6. DOM Manipulation in ClojureScript. In the course of manipulating the DOM in ClojureScript, we learn more about JavaScript interop. Having discussed functional programming, we see how DOM manipulation falls short.
-7. Reagent. We learn the better way to create UIs in ClojureScript, using Reagent, a React.js wrapper.
-8. ClojureScript on the Server.
+2. Hello World. The basics of compiling ClojureScript, running it in the browser, and using it to manipulate the DOM.
+3. Upgrading our toolchain. In this chapter, we set up and explore Leiningen and Figwheel, and build a larger example application. We start to see the limitations of manipulating the DOM directly as an application grows.
+4. React and ClojureScript. In this chapter, we explore how ClojureScript leverages the React ecosystem to use a more functional approach to user interfaces. We initially consider some of the principles of functional programming -- referential transparency, immutable data structures, concurrency, and function pipelines. Then we apply these lessons in building a customizable timer. (TODO)
 
 ** Why ClojureScript?
 
-Why should JavaScript developers be interested in ClojureScript? With ES6/7 and a toolchain including Webpack or TypeScript, JavaScript has become quite a nice language to program in. In many ways, the JavaScript world is implementing many of the ideas that had currency in the ClojureScript world for years. Libraries like Immutable.js provide immutable data structures, the React/Redux stack starkly demonstrate the benefits of functional programming to manage state, async/await provides a great experience for concurrent programming.
+Why should JavaScript developers be interested in ClojureScript? With ES6/7 and a toolchain including Webpack or TypeScript, JavaScript has become quite a nice language to use. In many ways, the JavaScript world is implementing many of the ideas that had currency in the ClojureScript world for years. Libraries like Immutable.js provide immutable data structures, the React/Redux stack starkly demonstrate the benefits of functional programming to manage state, async/await provides a good experience for concurrent programming.
 
 *** First Class Functional Programming
 
-If the chief benefits of ClojureScript are a functional style of programming, immutable (and performant) data structures, and convenient tools for concurrent programming -- why not just do it in JavaScript? As someone who has spent hours configuring Webpack, tried to use Immutable.js in conjunction with other libraries, or simulated the experience of a more funcional, immutable language with libraries like Ramda.js will recognize the hassle. 
+If the chief benefits of ClojureScript are a functional style of programming, immutable (and performant) data structures, and convenient tools for concurrent programming -- why not just do it in JavaScript? Anyone who has spent hours configuring Webpack, tried to use Immutable.js in conjunction with other libraries, or simulated the experience of a more funcional, immutable language with libraries like Ramda.js will recognize that it is not a seamless, natural experience. 
 
-At present, JavaScript pushes many of its nicest features into the transplilation process, which has become increasingly more complex. Want a nice type system similar to an ML or Haskell? Add Flow Types and set Babel up to strip them out. But do you want to be able to reference those types at runtime to validate data? Use tcomb and a Babel plugin. Heard of macros and want to try them? Add a compilation step using sweet.js. But at every step your transpilation process becomes more brittle, and the resulting experience, while beneficial, usually remains awkward.
+At present, many of the nicest features are purchased at the price of a more complex transpilation process. Want a nice type system similar to an ML or Haskell? Add Flow Types and set Babel up to strip them out. But do you want to be able to reference those types at runtime to validate data? Use tcomb and a Babel plugin. Heard of macros and want to try them? Add a compilation step using sweet.js. But at every step your transpilation process becomes more brittle, and the resulting experience, while beneficial, usually remains awkward.
 
 Immutable.js gives you the benefit of persistent, immutable data structures. However, most libraries expect a regular JavaScript array, and the benefits Immutable.js brings are always attended by additional complexities and workarounds in practice.
 
-The libraries and toolchain that has developed in the JavaScript ecosystem have brought many of the benefits of functional programming to the web world, especially on the front end. But anyone who has architected these systems know that to get these benefits require significant complexity in creating and maintaining the toolchain, and developers recognize that along with the benefits comes an ideal which falls quite short, and results in a number of workarounds. The benefits are real, but so are the inelegant hacks which we pay.
+The libraries and toolchain that has developed in the JavaScript ecosystem have brought many of the benefits of functional programming to the web world, especially on the front end. But anyone who has architected these systems know that to get these benefits require significant complexity in creating and maintaining the toolchain, and developers recognize that along with the benefits comes an ideal which falls quite short, and results in a number of workarounds. The benefits are real, but so are the inelegant hacks which we live with.
 
-With ClojureScript, however, immutability is not bolted on to a mutable-first language, functional programming is not a second class citizen, and the toolchain is quite straighforward. In part 0 of the tutorial, we examine how ClojureScript's data structures are used and compare the experience to JavaScript. We explore, briefly, the functional style for solving problems. In the second chapter, we begin to look at the toolchain. 
+With ClojureScript, however, immutability is not bolted on to a mutable-first language, functional programming is not a second class citizen, and the toolchain is quite straighforward. ClojureScript is pragmatic; unlike some other compile-to-JavaScript languages, it is able to interoperate with JavaScript in a natural way, leveraging the full range of the JavaScript ecosystem. The fact that ClojureScript is a small community relative to JavaScript does not mean it has an impoverished ecosystem. As JavaScript's ecosystem advances, ClojureScript is a direct beneficiary.
 
 *** Pragmatism and Stability
 
-JavaScript is a very fast-moving language, both in the library ecosystem and the language itself... The core Clojure/ClojureScript language, on the other hand, is marked by its stability. The core of the language is quite small, and the core developers are reticent to add anything to the language core that could be implemented as a library.
+The JavaScript landscape is rapidly evolving, at both the library and language level. The ClojureScript language, on the other hand, is marked by its stability. The core of the language is quite small, and the core developers are reticent to add anything to the language core that could be implemented as a library. Because ClojureScript is a Lisp, syntax can be changed at the library level. Let's consider a quick example.
 
-While the stability of the Clojure/ClojureScript core may make it sound as though the language moves slowly, that turns out not to the be the case. ClojureScript is a lisp with a powerful macro system. You don't have to worry about understanding macros yet. But consider this example.
+One of the nice features of ES6 is the ability to use shorthand JavaScript property names. For example:
 
-[The map syntax macro https://clojureverse.org/t/shortand-clojure-syntax-for-properties-on-hashmaps/1918/3]
+#+BEGIN_SRC JavaScript
+const a = 1;
+const b = 2;
+const c = 3;
+const abc = {a, b, c};
+abc => {a: 1, b: 2, c: 3}
+#+END_SRC
 
-The ClojureScript community is much smaller than the JavaScript world. One common worry is that ClojureScript libraries won't be available, because there is a smaller community to support them. However, ClojureScript is able to interoperate with JavaScript seamlessly, and so ClojureScript can borrow from the JavaScript world....
+JavaScript developers had to wait until this change was implemented in the language. But a ClojureScript developer can implement this quite simply in his or her own code base with a macro. One implementation is as follows:[fn:1] 
 
+#+BEGIN_SRC ClojureScript
+(defmacro nmap [& xs] 
+    (cons 'hash-map 
+              (interleave (map (comp keyword name) xs) xs)))
+(def abc 
+  (let [a 1, b 2, c 3] 
+    (nmap a b c)))
 
+abc 
+  => {:c 3, :b 2, :a 1}
+#+END_SRC
 
-** The Rationale for this Tutorial
+Don't worry about the details. Macros are an advanced topic, and understanding them is not necessary to being productive in ClojureScript. The point is simply to see that ClojureScript can be quite stable, while almost endlessly flexible. ClojureScript is able to accomplish the feat of being both more stable and more flexible than JavaScript, without giving up access to the JavaScript ecosystem.
 
-This tutorial aims to help beginners--especially those with a JavaScript background--surmount the common barriers to learning ClojureScript. The barriers to learning ClojureScript can be roughly divided into three categories: syntax, tooling, and ecosystem.
+* Footnotes
 
-*** Syntax
-
- Syntax is perhaps the least problematic barrier, because the situation with Clojure's documentation is rapidly improving. However, most of the learning materials take a Clojure-first approach. The assumption often is that users learn Clojure first, then move onto ClojureScript.
-
- This is not at all a bad thing, but for developers who with to learn ClojureScript first, this can involve a step of mental translation. Learn from books like "Programming Clojure" or "The Joy of Clojure", and then do the mental translation to ClojureScript. 
-
- Given that good resources already exist, figuring out ClojureScript's syntax is usually not the biggest barrier to learning ClojureScript. For that reason, while the tutorial does introduce Clojure's syntax, it points the user to the existing resources or an in depth treatment.
-
-*** Tooling
-
- Finding a clear path to understanding ClojureScript's tooling is more challenging. There is currently a lot of change in the ClojureScript tooling space.At the moment, ClojureScript can be compiled in at least 5 different ways (https://clojureverse.org/t/now-we-have-5-means-to-compile-clojurescript/372)...
-
- The problem for those learning ClojureScript is no longer that tooling is scarce or of low quality. It's that there are many tools, and the ability to understand the trade-offs is something beginners often lack. For that reason, this tutorial spends time explaining the tools. We start with Lumo as an easy way to get a REPL, and proceed to Leiningen/Figwheel, since it seems to be the standard.
-
-*** Ecosystem
-
-ClojureScript's ecosystem can also be confusing for beginners. The chief problem is telling the difference between a library that's simply finished, and a library that has been abandoned. Even experienced open source maintainers have trouble with abandoned Clojure libraries. Resources like Clojure Toolbox help some, but Clojure Toolbox does not curate for quality. Libraries filled with broken links or open bugs often are not removed from the list. Therefore, another goal of the tutorial is to get a sense of the essential libraries in the Clojure ecosystem
+[fn:1] The example is jochenriekhof's, and can be found [[https://clojureverse.org/t/shortand-clojure-syntax-for-properties-on-hashmaps/1918/3][here]].

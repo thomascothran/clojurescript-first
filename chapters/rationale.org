@@ -1,0 +1,21 @@
+** The Rationale for this Tutorial
+
+This tutorial aims to help beginners--especially those with a JavaScript background--surmount the common barriers to learning ClojureScript. Much of the existing ClojureScript documentation is aimed at Clojure developers, and much of the Clojure documentation is aimed at JavaScript developers. The barriers to learning ClojureScript can be roughly divided into three categories: syntax, tooling, and ecosystem.
+
+*** Syntax
+
+ Syntax is perhaps the least problematic barrier, because the situation with Clojure's documentation is rapidly improving. However, most of the learning materials take a Clojure-first approach. The assumption often is that users learn Clojure first, then move onto ClojureScript.
+
+ This is not at all a bad thing, but for developers who with to learn ClojureScript first, this can involve a step of mental translation. Learn from books like "Programming Clojure" or "The Joy of Clojure", and then do the mental translation to ClojureScript. For this reason, when we refer ClojureScript we do so without reference to Clojure to spare beginners the difficulty of sorting out the differences between the two until later.
+
+ Given that good resources already exist, figuring out ClojureScript's syntax is usually not the biggest barrier to learning ClojureScript. While the tutorial does introduce Clojure's syntax, it points the user to the existing resources rather than offering an in depth treatment.
+
+*** Tooling
+
+ Finding a clear path to understanding ClojureScript's tooling is more challenging. There is currently a lot of change in the ClojureScript tooling space. At the moment, ClojureScript can be compiled in [[https://clojureverse.org/t/now-we-have-5-means-to-compile-clojurescript/372][at least 5 different ways.]] There are different ways of interoperating with NPM modules, with varying degrees of difficulty. 
+
+The problem for those learning ClojureScript is no longer that tooling is scarce or of low quality. But the ability to understand the trade-offs involved in the different options is something beginners lack. For that reason, this tutorial spends time explaining the tools. We start with the Lumo, because its installation comes naturally to JavaScript developers. Later, we proceed to Leiningen/Figwheel, since it is the de facto standard.
+
+*** Ecosystem
+
+ClojureScript's ecosystem can also be confusing for beginners. The chief problem is telling the difference between a library that's simply finished, and a library that has been abandoned. Even experienced open source maintainers have trouble with dependencies on abandoned Clojure libraries. Resources like Clojure Toolbox are primarily geared toward library discovery, not curation for quality. Libraries filled with broken links or open bugs often are not removed from the list. Therefore, another goal of the tutorial is to get a sense of the essential libraries in the Clojure ecosystem, and the rules of thumb for making library choices.

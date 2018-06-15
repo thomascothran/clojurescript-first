@@ -10,4 +10,6 @@
                          :figwheel     true
                          :compiler     {:main "workout-tracker.core"}
                          }]
-  })
+   }
+  )
+
