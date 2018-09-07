@@ -16,7 +16,7 @@ For the motivation behind this tutorial, see [[./chapters/rationale.org][here]].
 
 ** Table of Contents
 
-1. [[./chapters/a_first_foray.org]]. An introduction to ClojureScript's syntax, with plenty of exercise at the REPL.
+1. [[./chapters/a_first_foray.org][A first Foray]]. An introduction to ClojureScript's syntax, with plenty of exercise at the REPL.
 2. [[./chapters/hello_world_compiling_clojurescript.org][Hello World]]. The basics of compiling ClojureScript, running it in the browser, and using it to manipulate the DOM.
 3. [[./chapters/clojurescript_tooling.org][Upgrading our toolchain]]. In this chapter, we set up and explore Leiningen and Figwheel, and build a larger example application. We start to see the limitations of manipulating the DOM directly as an application grows.
 
