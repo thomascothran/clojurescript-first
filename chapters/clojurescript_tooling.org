@@ -4,7 +4,7 @@ In the last chapter, we compiled some very simple ClojureScript and executed it 
 
 Specifically, we would like for any changes in our code to be automatically loaded into the browser. It would be nice if we didn't lose the state of our application when this happens. And it would be incredibly convenient if we could run our REPL right in the browser. In this chapter, we will accomplish all these goals.
 
-Until now, we have not had to use the JVM. However, to get state of the art ClojureScript tooling, we will need to add the JVM to our stack. JavaScript developers have differing perceptions of the JVM. A significant faction of JavaScript developers seem to think that the JVM is slow or bloated. In fact, the JVM is far faster [[https://benchmarksgame-team.pages.debian.net/benchmarksgame/faster/javascript.html][on most benchmarks]] than V8, and has support for multi-threading. 
+Until now, we have not had to use the JVM. However, to get state of the art ClojureScript tooling, we will need to add the JVM to our stack. JavaScript developers have differing perceptions of the JVM. A significant faction of JavaScript developers seem to think that the JVM is slow or bloated. In fact, the JVM is generally faster [[https://benchmarksgame-team.pages.debian.net/benchmarksgame/faster/javascript.html][on most benchmarks]] than V8 and has support for multi-threading. 
 
 However, the JVM has a slower startup time, and the startup time for Clojure on the JVM is especially slow. This will be noticeable when you use ClojureScript's JVM tooling. This turns out not to matter in most cases, because Leinengen and Figwheel reload code for you as it changes, and you will not need to restart a REPL or server very often.
 
@@ -1030,7 +1030,7 @@ With what you have learned in this tutorial, you should be ready to tackle one o
 ** Further Reading
    - [[https://github.com/technomancy/leiningen/blob/stable/doc/TUTORIAL.md][Official Leiningen tutorial]]
    - [[https://github.com/bhauman/lein-figwheel/wiki/Quick-Start][Official Figwheel tutorial]]
-   - [[https://github.com/emezeske/lein-cljsbuild][=lein-cljsbuild= Readme]].
+   - [[https://github.com/emezeske/lein-cljsbuild][lein-cljsbuild Readme]].
     
 ** Homework
 

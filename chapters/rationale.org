@@ -4,9 +4,9 @@ This tutorial aims to help beginners--especially those with a JavaScript backgro
 
 *** Syntax
 
- Syntax is perhaps the least problematic barrier, because the situation with Clojure's documentation is rapidly improving. However, most of the learning materials take a Clojure-first approach. The assumption often is that users learn Clojure first, then move onto ClojureScript.
+Syntax is perhaps the least problematic barrier, because the situation with Clojure's documentation is rapidly improving. However, most of the learning materials take a Clojure-first approach. The assumption often is that users learn Clojure first, then move onto ClojureScript.
 
- This is not at all a bad thing, but for developers who with to learn ClojureScript first, this can involve a step of mental translation. Learn from books like "Programming Clojure" or "The Joy of Clojure", and then do the mental translation to ClojureScript. For this reason, when we refer ClojureScript we do so without reference to Clojure to spare beginners the difficulty of sorting out the differences between the two until later.
+This is not at all a bad thing, but for developers who with to learn ClojureScript first, this can involve a step of mental translation. Learn from books like "Programming Clojure" or "The Joy of Clojure", and then do the mental translation to ClojureScript. For this reason, when we refer ClojureScript we do so without reference to Clojure to spare beginners the difficulty of sorting out the differences between the two until later.
 
  Given that good resources already exist, figuring out ClojureScript's syntax is usually not the biggest barrier to learning ClojureScript. While the tutorial does introduce Clojure's syntax, it points the user to the existing resources rather than offering an in depth treatment.
 

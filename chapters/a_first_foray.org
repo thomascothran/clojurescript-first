@@ -573,12 +573,6 @@ cljs.user=> (filter high-priority? task-list)
 
 Excellent! We will learn a lot more about functions -- and about functional programming -- later on. Our purpose has to make a first foray into the unknown world of ClojureScript to get a very general feeling for how it is laid out. We have only scratched the surface. There is a "Further reading" section below. Now that you have some practical experience, feel free to consult those resources before moving on with the tutorial.
 
-** TODO See what JavaScript is Emitted
-
-How do I see the javascript emitted? Turn verbose mode on with -v.
-
-** TODO ~if~ and ~cond~
-
 ** Answers to Our Questions
 
 Now we can review the questions we posed at the beginning of the chapter, and summarize the answers.
@@ -604,4 +598,5 @@ Now we can review the questions we posed at the beginning of the chapter, and su
    - Try to get the second item from a vector.
    - Do some exploring at [[https://clojureverse.org][the ClojureVerse forum]] and sign up.
    - Explore the [[http://cljs.info][CLJS cheat sheet]]. Try out some functions in the Strings and Numbers categories
+   - Want to see what JavaScript is emitted when you define ClojureScript functions? Try running lumo in verbose mode with ~lumo -v~.
 
